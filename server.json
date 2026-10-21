@@ -22,14 +22,20 @@
       "environmentVariables": [
         {
           "name": "SNIPAYA_MCP_TOKEN",
-          "description": "Token from Snipaya > Settings > AI Assistants",
-          "isRequired": true,
+          "description": "Token from Snipaya > Settings > AI Assistants. Read from Snipaya when unset",
+          "isRequired": false,
           "isSecret": true
         },
         {
           "name": "SNIPAYA_MCP_URL",
           "description": "MCP URL from Snipaya > Settings > AI Assistants",
           "default": "http://127.0.0.1:47321/mcp",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "SNIPAYA_MCP_NO_LAUNCH",
+          "description": "Set to 1 to never open Snipaya when it is not running",
           "isRequired": false,
           "isSecret": false
         }

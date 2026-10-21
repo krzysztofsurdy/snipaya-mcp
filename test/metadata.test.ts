@@ -33,6 +33,8 @@ const pkg = read<PackageJson>('package.json')
 const server = read<ServerJson>('server.json')
 const manifest = read<Manifest>('manifest.json')
 const [npmPackage] = server.packages
+const variable = (name: string) =>
+  npmPackage?.environmentVariables.find((entry) => entry.name === name)
 
 describe('directory metadata', () => {
   it('keeps one version everywhere', () => {
@@ -48,13 +50,14 @@ describe('directory metadata', () => {
     expect(server.description.length).toBeLessThanOrEqual(100)
   })
 
-  it('marks the token as a secret in both formats', () => {
-    const token = npmPackage?.environmentVariables.find(
-      (variable) => variable.name === 'SNIPAYA_MCP_TOKEN'
-    )
-    expect(token).toMatchObject({ isRequired: true, isSecret: true })
-    expect(manifest.user_config.token).toMatchObject({ sensitive: true, required: true })
+  it('marks the token as an optional secret in both formats', () => {
+    expect(variable('SNIPAYA_MCP_TOKEN')).toMatchObject({ isRequired: false, isSecret: true })
+    expect(manifest.user_config.token).toMatchObject({ sensitive: true, required: false, default: '' })
     expect(manifest.server.mcp_config.env.SNIPAYA_MCP_TOKEN).toBe('${user_config.token}')
+  })
+
+  it('lists the switch that stops the bridge from opening Snipaya', () => {
+    expect(variable('SNIPAYA_MCP_NO_LAUNCH')).toMatchObject({ isRequired: false, isSecret: false })
   })
 
   it('points the bundle at the built entry point', () => {

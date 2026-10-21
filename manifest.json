@@ -166,9 +166,10 @@
     "token": {
       "type": "string",
       "title": "Snipaya MCP token",
-      "description": "Copy it from Snipaya > Settings > AI Assistants after turning the MCP server on.",
+      "description": "Leave empty to use the token Snipaya saved. Otherwise copy it from Snipaya > Settings > AI Assistants.",
+      "default": "",
       "sensitive": true,
-      "required": true
+      "required": false
     },
     "url": {
       "type": "string",

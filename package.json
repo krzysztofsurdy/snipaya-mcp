@@ -1,0 +1,59 @@
+{
+  "name": "snipaya-mcp",
+  "version": "1.0.0",
+  "description": "Stdio bridge to the local MCP server of Snipaya, the macOS image annotator",
+  "mcpName": "io.github.krzysztofsurdy/snipaya-mcp",
+  "type": "module",
+  "bin": {
+    "snipaya-mcp": "dist/index.js"
+  },
+  "files": [
+    "dist",
+    "server.json"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "pretest": "npm run build",
+    "test": "vitest run",
+    "pack:mcpb": "npm run build && node scripts/pack-mcpb.mjs",
+    "prepack": "npm run build"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "mcp-server",
+    "snipaya",
+    "screenshot",
+    "annotation",
+    "image-annotation",
+    "macos",
+    "stdio"
+  ],
+  "author": "Krzysztof Surdy",
+  "license": "MIT",
+  "homepage": "https://snipaya.app",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/krzysztofsurdy/snipaya-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/krzysztofsurdy/snipaya-mcp/issues"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^20.19.43",
+    "eslint": "^10.13.0",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.72.0",
+    "vitest": "^4.1.12",
+    "zod": "^4.6.7"
+  }
+}

@@ -27,7 +27,9 @@ Turn the server on in ${SETTINGS}.`
 
 export class ConfigError extends Error {}
 
-export type Config = { kind: 'run'; url: URL; token: string; autoLaunch: boolean } | { kind: 'help' }
+export type RunConfig = { kind: 'run'; url: URL; token: string; autoLaunch: boolean }
+
+export type Config = RunConfig | { kind: 'help' }
 
 const present = (...values: (string | undefined)[]): string | undefined =>
   values

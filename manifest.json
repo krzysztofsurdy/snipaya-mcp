@@ -1,0 +1,180 @@
+{
+  "manifest_version": "0.3",
+  "name": "snipaya-mcp",
+  "display_name": "Snipaya",
+  "version": "1.0.0",
+  "description": "Annotate screenshots in the Snipaya macOS app from your AI assistant.",
+  "long_description": "Connects to the MCP server built into Snipaya, the macOS image annotator. Requires the Snipaya app with its MCP server turned on in Settings > AI Assistants. The bundle only talks to Snipaya on this Mac (127.0.0.1) and forwards messages unchanged.",
+  "author": {
+    "name": "Krzysztof Surdy",
+    "url": "https://snipaya.app"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/krzysztofsurdy/snipaya-mcp.git"
+  },
+  "homepage": "https://snipaya.app",
+  "documentation": "https://github.com/krzysztofsurdy/snipaya-mcp#readme",
+  "support": "https://github.com/krzysztofsurdy/snipaya-mcp/issues",
+  "server": {
+    "type": "node",
+    "entry_point": "dist/index.js",
+    "mcp_config": {
+      "command": "node",
+      "args": [
+        "${__dirname}/dist/index.js"
+      ],
+      "env": {
+        "SNIPAYA_MCP_URL": "${user_config.url}",
+        "SNIPAYA_MCP_TOKEN": "${user_config.token}"
+      }
+    }
+  },
+  "tools": [
+    {
+      "name": "snipaya_get_canvas",
+      "description": "Get canvas"
+    },
+    {
+      "name": "snipaya_render",
+      "description": "Render canvas"
+    },
+    {
+      "name": "snipaya_add_image",
+      "description": "Add image"
+    },
+    {
+      "name": "snipaya_add_arrow",
+      "description": "Add arrow or line"
+    },
+    {
+      "name": "snipaya_add_shape",
+      "description": "Add shape"
+    },
+    {
+      "name": "snipaya_add_text",
+      "description": "Add text"
+    },
+    {
+      "name": "snipaya_add_step",
+      "description": "Add step number"
+    },
+    {
+      "name": "snipaya_add_emoji",
+      "description": "Add emoji"
+    },
+    {
+      "name": "snipaya_add_freehand",
+      "description": "Add freehand stroke"
+    },
+    {
+      "name": "snipaya_add_magnifier",
+      "description": "Add magnifier"
+    },
+    {
+      "name": "snipaya_add_callout",
+      "description": "Add callout"
+    },
+    {
+      "name": "snipaya_add_spotlight",
+      "description": "Add spotlight"
+    },
+    {
+      "name": "snipaya_add_measure",
+      "description": "Add measurement"
+    },
+    {
+      "name": "snipaya_pick_color",
+      "description": "Pick color"
+    },
+    {
+      "name": "snipaya_read_text",
+      "description": "Read text"
+    },
+    {
+      "name": "snipaya_redact",
+      "description": "Redact sensitive data"
+    },
+    {
+      "name": "snipaya_update_items",
+      "description": "Update elements"
+    },
+    {
+      "name": "snipaya_delete_items",
+      "description": "Delete elements"
+    },
+    {
+      "name": "snipaya_select",
+      "description": "Select elements"
+    },
+    {
+      "name": "snipaya_arrange",
+      "description": "Arrange images"
+    },
+    {
+      "name": "snipaya_set_crop",
+      "description": "Set crop"
+    },
+    {
+      "name": "snipaya_undo",
+      "description": "Undo"
+    },
+    {
+      "name": "snipaya_redo",
+      "description": "Redo"
+    },
+    {
+      "name": "snipaya_tabs",
+      "description": "Manage tabs"
+    },
+    {
+      "name": "snipaya_export",
+      "description": "Export image"
+    },
+    {
+      "name": "snipaya_list_destinations",
+      "description": "List export destinations"
+    },
+    {
+      "name": "snipaya_export_to",
+      "description": "Export to destination"
+    },
+    {
+      "name": "snipaya_save_project",
+      "description": "Save project"
+    }
+  ],
+  "tools_generated": true,
+  "keywords": [
+    "snipaya",
+    "screenshot",
+    "annotation",
+    "image",
+    "macos"
+  ],
+  "license": "MIT",
+  "compatibility": {
+    "platforms": [
+      "darwin"
+    ],
+    "runtimes": {
+      "node": ">=20.0.0"
+    }
+  },
+  "user_config": {
+    "token": {
+      "type": "string",
+      "title": "Snipaya MCP token",
+      "description": "Copy it from Snipaya > Settings > AI Assistants after turning the MCP server on.",
+      "sensitive": true,
+      "required": true
+    },
+    "url": {
+      "type": "string",
+      "title": "Snipaya MCP URL",
+      "description": "Shown in Snipaya > Settings > AI Assistants. Change it only if Snipaya shows a different port.",
+      "default": "http://127.0.0.1:47321/mcp",
+      "required": false
+    }
+  }
+}

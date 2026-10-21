@@ -145,8 +145,9 @@ The bridge writes one line to stderr (never stdout, which carries the protocol) 
 | `Snipaya's MCP server is off` | Turn on **Allow AI assistants** in **Settings > AI Assistants**. |
 | `Snipaya's settings ... cannot be read` or `hold no valid token` | Open Snipaya, which rewrites its settings, then check **Allow AI assistants**. Or set `SNIPAYA_MCP_TOKEN`. |
 | `Cannot open Snipaya` | Snipaya is not installed in a place macOS can find. Install it from [snipaya.app](https://snipaya.app) or open it yourself. |
+| `Opened Snipaya, but its MCP server starts only after you accept the license agreement` | Snipaya 1.1 and newer start the MCP server only after you accept the license agreement. Accept it in the Snipaya window, then restart the snipaya server in your client. |
 | `Opened Snipaya, but its MCP server did not answer` | Open **Settings > AI Assistants** and fix the error shown under the status. |
-| `Cannot reach Snipaya at ...` | Open Snipaya and turn on **Allow AI assistants**. If the status shows an error, fix that first. Check that the URL matches **Server URL**. |
+| `Cannot reach Snipaya at ...` | Open Snipaya and turn on **Allow AI assistants**. If the message mentions the license agreement, accept it in Snipaya first. If the status shows an error, fix that first. Check that the URL matches **Server URL**. |
 | `Snipaya rejected the token` | The token changed, for example after **Regenerate**. Remove `SNIPAYA_MCP_TOKEN` to use the saved token, or copy the current one. |
 | `Snipaya ended the session` | Snipaya restarted or the token changed. Restart the snipaya server in your client. |
 | `Refusing <host>` | The URL must point to `127.0.0.1` or `localhost`. Copy **Server URL** from Snipaya. |
@@ -162,6 +163,8 @@ npm run typecheck
 npm test          # builds, then runs the bridge over stdio against a local test server
 npm run pack:mcpb # builds snipaya-mcp-<version>.mcpb with the official mcpb CLI
 ```
+
+Without a token or URL, the bridge reads the settings of the installed Snipaya in `~/Library/Application Support/Snipaya`. Development builds of Snipaya keep their settings in their own `Snipaya Dev` profile folder, so to bridge to one, set `SNIPAYA_MCP_TOKEN` and `SNIPAYA_MCP_URL` to the values shown in its **Settings > AI Assistants**.
 
 ## Releasing
 

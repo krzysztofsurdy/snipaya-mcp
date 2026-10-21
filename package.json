@@ -21,7 +21,8 @@
     "pretest": "npm run build",
     "test": "vitest run",
     "pack:mcpb": "npm run build && node scripts/pack-mcpb.mjs",
-    "prepack": "npm run build"
+    "prepack": "npm run build",
+    "version": "node scripts/sync-version.mjs"
   },
   "keywords": [
     "mcp",

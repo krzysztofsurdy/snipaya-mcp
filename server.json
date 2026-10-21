@@ -28,8 +28,7 @@
         },
         {
           "name": "SNIPAYA_MCP_URL",
-          "description": "MCP URL from Snipaya > Settings > AI Assistants",
-          "default": "http://127.0.0.1:47321/mcp",
+          "description": "MCP URL from Snipaya > Settings > AI Assistants. Uses the port Snipaya saved when unset",
           "isRequired": false,
           "isSecret": false
         },

@@ -56,6 +56,13 @@ describe('directory metadata', () => {
     expect(manifest.server.mcp_config.env.SNIPAYA_MCP_TOKEN).toBe('${user_config.token}')
   })
 
+  it('leaves the URL unset by default so the port Snipaya saved applies', () => {
+    expect(variable('SNIPAYA_MCP_URL')).toMatchObject({ isRequired: false })
+    expect(variable('SNIPAYA_MCP_URL')).not.toHaveProperty('default')
+    expect(manifest.user_config.url).toMatchObject({ required: false, default: '' })
+    expect(manifest.server.mcp_config.env.SNIPAYA_MCP_URL).toBe('${user_config.url}')
+  })
+
   it('lists the switch that stops the bridge from opening Snipaya', () => {
     expect(variable('SNIPAYA_MCP_NO_LAUNCH')).toMatchObject({ isRequired: false, isSecret: false })
   })

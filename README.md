@@ -89,7 +89,7 @@ If your client supports Streamable HTTP servers directly, you do not need this b
 
 1. Download `snipaya-mcp-<version>.mcpb` from the [latest release](https://github.com/krzysztofsurdy/snipaya-mcp/releases/latest).
 2. Open it with an MCP client that supports MCP Bundles, or drag it into the client's extensions settings.
-3. Leave the token empty to use the one Snipaya saved, or paste the access token from Snipaya. Leave the URL at its default unless Snipaya shows a different one.
+3. Leave the token and URL empty to use what Snipaya saved, or paste the values from **Settings > AI Assistants** for a custom setup.
 
 ## Security model
 

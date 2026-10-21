@@ -174,8 +174,8 @@
     "url": {
       "type": "string",
       "title": "Snipaya MCP URL",
-      "description": "Shown in Snipaya > Settings > AI Assistants. Change it only if Snipaya shows a different port.",
-      "default": "http://127.0.0.1:47321/mcp",
+      "description": "Leave empty to use the port Snipaya saved. Otherwise copy the Server URL from Snipaya > Settings > AI Assistants.",
+      "default": "",
       "required": false
     }
   }

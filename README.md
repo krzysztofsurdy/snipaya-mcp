@@ -163,6 +163,33 @@ npm test          # builds, then runs the bridge over stdio against a local test
 npm run pack:mcpb # builds snipaya-mcp-<version>.mcpb with the official mcpb CLI
 ```
 
+## Releasing
+
+Pushing a `v*` tag runs `.github/workflows/release.yml`. It runs the CI checks, checks that the tag matches the version in `package.json`, `package-lock.json`, `server.json` and `manifest.json`, publishes to npm with provenance, creates the GitHub release with the `.mcpb` attached, and publishes `server.json` to the MCP Registry.
+
+### One-time setup
+
+On npmjs.com, open **snipaya-mcp > Settings > Trusted publishing**, choose **GitHub Actions** and enter:
+
+| Field | Value |
+| --- | --- |
+| Organization or user | `krzysztofsurdy` |
+| Repository | `snipaya-mcp` |
+| Workflow filename | `release.yml` |
+| Environment name | leave empty |
+| Allowed actions | allow `npm publish` |
+
+npm expires a trusted publisher that has not published within 2 days, so add it shortly before the first release. The MCP Registry and the GitHub release need no setup: they use the workflow's own GitHub token.
+
+### Cut a release
+
+```sh
+npm version minor        # or patch, major: bumps all four files, commits and tags v<version>
+git push --follow-tags
+```
+
+Re-running a failed release is safe: it skips the npm and MCP Registry publish when that version is already there, and replaces the bundle on an existing GitHub release.
+
 ## License
 
 [MIT](LICENSE)

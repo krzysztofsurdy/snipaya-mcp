@@ -11,7 +11,15 @@ const run = (command, args, cwd = '.') => execFileSync(command, args, { cwd, std
 
 rmSync(STAGE, { recursive: true, force: true })
 mkdirSync(STAGE, { recursive: true })
-for (const file of ['manifest.json', 'package.json', 'package-lock.json', 'README.md', 'LICENSE', 'dist']) {
+for (const file of [
+  'manifest.json',
+  'package.json',
+  'package-lock.json',
+  'README.md',
+  'LICENSE',
+  'dist',
+  'assets/snipaya-icon.png'
+]) {
   cpSync(file, join(STAGE, file), { recursive: true })
 }
 run('npm', ['ci', '--omit=dev', '--ignore-scripts', '--no-audit', '--no-fund'], STAGE)

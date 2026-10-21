@@ -5,6 +5,7 @@
   "version": "1.0.0",
   "description": "Annotate screenshots in the Snipaya macOS app from your AI assistant.",
   "long_description": "Connects to the MCP server built into Snipaya, the macOS image annotator. Requires the Snipaya app with its MCP server turned on in Settings > AI Assistants. The bundle only talks to Snipaya on this Mac (127.0.0.1) and forwards messages unchanged.",
+  "icon": "assets/snipaya-icon.png",
   "author": {
     "name": "Krzysztof Surdy",
     "url": "https://snipaya.app"

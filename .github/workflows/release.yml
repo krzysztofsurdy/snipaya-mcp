@@ -1,0 +1,145 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions: {}
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+env:
+  MCP_PUBLISHER_VERSION: 1.8.1
+  MCP_PUBLISHER_SHA256: a06c9096dcb9727c13555b6be26c7effa707b01f06a4c561ba7a3635443cf2cc
+
+jobs:
+  version:
+    name: Tag matches the version files
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.verify.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - id: verify
+        run: |
+          version=$(node scripts/verify-version.mjs "$GITHUB_REF_NAME")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+  checks:
+    needs: version
+    uses: ./.github/workflows/ci.yml
+    permissions:
+      contents: read
+
+  npm:
+    name: Publish to npm
+    needs: [version, checks]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+      - id: existing
+        name: Check whether npm already has this version
+        run: |
+          published=$(npm view "snipaya-mcp@$VERSION" version --prefer-online 2>/dev/null || true)
+          if [ "$published" = "$VERSION" ]; then
+            echo "snipaya-mcp@$VERSION is already on npm, skipping publish"
+            echo "published=true" >> "$GITHUB_OUTPUT"
+          fi
+      - if: steps.existing.outputs.published != 'true'
+        run: npm ci --ignore-scripts
+      - if: steps.existing.outputs.published != 'true'
+        run: npm publish --provenance
+      - name: Wait until npm serves the version
+        run: |
+          for attempt in $(seq 1 30); do
+            if [ "$(npm view "snipaya-mcp@$VERSION" version --prefer-online 2>/dev/null)" = "$VERSION" ]; then
+              exit 0
+            fi
+            echo "Attempt $attempt: npm does not serve snipaya-mcp@$VERSION yet"
+            sleep 10
+          done
+          echo "::error::npm did not serve snipaya-mcp@$VERSION within 5 minutes"
+          exit 1
+
+  github-release:
+    name: GitHub release with the MCP Bundle
+    needs: [version, npm]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci --ignore-scripts
+      - run: npm run pack:mcpb
+      - name: Create the release or replace its bundle
+        run: |
+          bundle="snipaya-mcp-$VERSION.mcpb"
+          if gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" "$bundle" --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" "$bundle" --verify-tag --generate-notes
+          fi
+
+  mcp-registry:
+    name: Publish to the MCP Registry
+    needs: [version, npm]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - id: existing
+        name: Check whether the registry already has this version
+        run: |
+          name=$(jq -r .name server.json)
+          url="https://registry.modelcontextprotocol.io/v0.1/servers/${name//\//%2F}/versions/$VERSION"
+          status=$(curl -s -o /dev/null -w '%{http_code}' "$url")
+          if [ "$status" = "200" ]; then
+            echo "$name $VERSION is already in the MCP Registry, skipping publish"
+            echo "published=true" >> "$GITHUB_OUTPUT"
+          fi
+      - if: steps.existing.outputs.published != 'true'
+        name: Install mcp-publisher
+        run: |
+          curl -fsSL -o mcp-publisher.tar.gz \
+            "https://github.com/modelcontextprotocol/registry/releases/download/v$MCP_PUBLISHER_VERSION/mcp-publisher_linux_amd64.tar.gz"
+          echo "$MCP_PUBLISHER_SHA256  mcp-publisher.tar.gz" | sha256sum -c -
+          tar xzf mcp-publisher.tar.gz mcp-publisher
+      - if: steps.existing.outputs.published != 'true'
+        run: ./mcp-publisher login github-oidc
+      - if: steps.existing.outputs.published != 'true'
+        run: ./mcp-publisher publish

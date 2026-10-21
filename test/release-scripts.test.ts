@@ -111,6 +111,7 @@ describe('npm version', () => {
       'package-lock.json',
       'server.json',
       'manifest.json',
+      'scripts/metadata.mjs',
       'scripts/sync-version.mjs'
     ]) {
       cpSync(repoFile(file), join(dir, file))
@@ -137,5 +138,47 @@ describe('npm version', () => {
     ])
     expect(readJson(dir, 'server.json').version).toBe(next)
     expect(readJson(dir, 'manifest.json').version).toBe(next)
+  })
+})
+
+describe('verify-version', () => {
+  it('prints the version when the tag matches all four files', () => {
+    const dir = project({ pkg: '1.2.0' })
+
+    const result = run('verify-version.mjs', dir, 'v1.2.0')
+
+    expect(result.status, result.stderr).toBe(0)
+    expect(result.stdout).toBe('1.2.0\n')
+  })
+
+  it('names every file whose version differs from the tag', () => {
+    const dir = project({ pkg: '1.2.0', lock: '1.1.0', npm: '1.1.0', manifest: '1.1.0' })
+
+    const result = run('verify-version.mjs', dir, 'v1.2.0')
+
+    expect(result.status).not.toBe(0)
+    expect(result.stdout).toBe('')
+    expect(result.stderr).toContain('package-lock.json')
+    expect(result.stderr).toContain('server.json packages[npm]')
+    expect(result.stderr).toContain('manifest.json')
+    expect(result.stderr).not.toContain('package.json version')
+  })
+
+  it('fails when the tag is another version', () => {
+    const dir = project({ pkg: '1.2.0' })
+
+    const result = run('verify-version.mjs', dir, 'v1.2.1')
+
+    expect(result.status).not.toBe(0)
+    expect(result.stderr).toContain('package.json version is 1.2.0, tag v1.2.1 wants 1.2.1')
+  })
+
+  it.each([['1.2.0'], ['release-1.2.0'], ['']])('rejects the tag %j', (tag) => {
+    const dir = project({ pkg: '1.2.0' })
+
+    const result = run('verify-version.mjs', dir, tag)
+
+    expect(result.status).not.toBe(0)
+    expect(result.stderr).toContain('Expected a tag like v1.2.3')
   })
 })

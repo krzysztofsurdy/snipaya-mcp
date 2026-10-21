@@ -165,7 +165,7 @@ npm run pack:mcpb # builds snipaya-mcp-<version>.mcpb with the official mcpb CLI
 
 ## Releasing
 
-Pushing a `v*` tag runs `.github/workflows/release.yml`. It runs the CI checks, checks that the tag matches the version in `package.json`, `package-lock.json`, `server.json` and `manifest.json`, publishes to npm with provenance, creates the GitHub release with the `.mcpb` attached, and publishes `server.json` to the MCP Registry.
+Pushing a `v*` tag runs `.github/workflows/release.yml`. It runs the CI checks, checks that the tag matches the version in `package.json`, `package-lock.json`, `server.json` and `manifest.json`, stages the version on npm (with provenance), waits up to 60 minutes for a maintainer to approve it, then creates the GitHub release with the `.mcpb` attached, and publishes `server.json` to the MCP Registry.
 
 ### One-time setup
 
@@ -177,7 +177,7 @@ On npmjs.com, open **snipaya-mcp > Settings > Trusted publishing**, choose **Git
 | Repository | `snipaya-mcp` |
 | Workflow filename | `release.yml` |
 | Environment name | leave empty |
-| Allowed actions | allow `npm publish` |
+| Allowed actions | `npm stage publish` only |
 
 npm expires a trusted publisher that has not published within 2 days, so add it shortly before the first release. The MCP Registry and the GitHub release need no setup: they use the workflow's own GitHub token.
 
@@ -187,6 +187,8 @@ npm expires a trusted publisher that has not published within 2 days, so add it 
 npm version minor        # or patch, major: bumps all four files, commits and tags v<version>
 git push --follow-tags
 ```
+
+When the workflow reaches **Publish to npm**, approve the staged version with a 2FA prompt: `npm stage approve snipaya-mcp@<version>`, or on the package page on npmjs.com. The rest of the release continues on its own.
 
 Re-running a failed release is safe: it skips the npm and MCP Registry publish when that version is already there, and replaces the bundle on an existing GitHub release.
 

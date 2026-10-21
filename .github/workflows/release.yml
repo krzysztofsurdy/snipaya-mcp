@@ -68,17 +68,19 @@ jobs:
       - if: steps.existing.outputs.published != 'true'
         run: npm ci --ignore-scripts
       - if: steps.existing.outputs.published != 'true'
-        run: npm publish --provenance
-      - name: Wait until npm serves the version
+        run: npm stage publish
+      - name: Wait until the staged version is approved and served
+        timeout-minutes: 65
         run: |
-          for attempt in $(seq 1 30); do
+          echo "Approve with: npm stage approve snipaya-mcp@$VERSION (or on npmjs.com)"
+          for attempt in $(seq 1 360); do
             if [ "$(npm view "snipaya-mcp@$VERSION" version --prefer-online 2>/dev/null)" = "$VERSION" ]; then
               exit 0
             fi
             echo "Attempt $attempt: npm does not serve snipaya-mcp@$VERSION yet"
             sleep 10
           done
-          echo "::error::npm did not serve snipaya-mcp@$VERSION within 5 minutes"
+          echo "::error::snipaya-mcp@$VERSION was not approved and served within 60 minutes"
           exit 1
 
   github-release:

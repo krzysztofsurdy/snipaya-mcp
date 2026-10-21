@@ -30,7 +30,7 @@ export interface Bridge {
 export const describeError = (error: unknown, url: URL): string => {
   if (error instanceof StreamableHTTPError) {
     if (error.code === 401) {
-      return `Snipaya rejected the token. Copy the current token from ${SETTINGS} into SNIPAYA_MCP_TOKEN.`
+      return `Snipaya rejected the token. Remove SNIPAYA_MCP_TOKEN to use the token Snipaya saved, or copy the current one from ${SETTINGS}.`
     }
     if (error.code === 404 && error.message.includes('Session not found')) {
       return 'Snipaya ended the session because the app restarted or the token changed. Restart the snipaya server in your MCP client.'

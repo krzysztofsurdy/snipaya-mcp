@@ -201,7 +201,9 @@ describe('errors', () => {
     const wrong = 'b'.repeat(64)
     await expect(
       connectBridged({ SNIPAYA_MCP_URL: server.url, SNIPAYA_MCP_TOKEN: wrong })
-    ).rejects.toThrow(/rejected the token.*Settings > AI Assistants/)
+    ).rejects.toThrow(
+      /rejected the token\. Remove SNIPAYA_MCP_TOKEN to use the token Snipaya saved, or copy the current one from Snipaya > Settings > AI Assistants\./
+    )
     expect(stderr).toMatch(/rejected the token/)
     expect(stderr).not.toMatch(/\n\s+at /)
     expect(stderr).not.toContain(wrong)

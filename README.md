@@ -1,0 +1,134 @@
+# snipaya-mcp
+
+Connect any MCP client that speaks stdio to [Snipaya](https://snipaya.app), the image and screenshot annotator for macOS. Your assistant can read the canvas, add arrows, text, shapes and callouts, redact sensitive data, crop, and export, while you watch the result in Snipaya.
+
+Snipaya has an MCP server built in, served over Streamable HTTP on `127.0.0.1`. `snipaya-mcp` is a thin bridge for clients that only start local stdio servers: it forwards every MCP message between the client and Snipaya, unchanged.
+
+<!-- Demo GIF: replace with docs/demo.gif once recorded -->
+<!-- ![snipaya-mcp demo](docs/demo.gif) -->
+
+## Requirements
+
+- [Snipaya](https://snipaya.app) for macOS. It comes with a 14-day free trial.
+- Node.js 20 or newer (for the `npx` setup).
+
+## Turn on the MCP server in Snipaya
+
+The server is off by default.
+
+1. Open Snipaya, then **Settings > AI Assistants**.
+2. Turn on **Allow AI assistants**. The status changes to **Running**.
+3. Copy the **Server URL** and the **Access token**. You need the token below. The URL only matters if it differs from `http://127.0.0.1:47321/mcp`.
+
+## Setup
+
+### npx
+
+```sh
+SNIPAYA_MCP_TOKEN=<access token> npx -y snipaya-mcp
+```
+
+| Variable | Flag | Default | |
+| --- | --- | --- | --- |
+| `SNIPAYA_MCP_TOKEN` | `--token` | | Required. Access token from Snipaya. |
+| `SNIPAYA_MCP_URL` | `--url` | `http://127.0.0.1:47321/mcp` | Server URL from Snipaya. Only `127.0.0.1` and `localhost` are accepted. |
+
+Prefer the environment variable over `--token`: command-line flags are visible to other processes on the Mac.
+
+### JSON config
+
+For clients configured with an `mcpServers` JSON file:
+
+```json
+{
+  "mcpServers": {
+    "snipaya": {
+      "command": "npx",
+      "args": ["-y", "snipaya-mcp"],
+      "env": {
+        "SNIPAYA_MCP_TOKEN": "<access token>"
+      }
+    }
+  }
+}
+```
+
+Add `"SNIPAYA_MCP_URL": "<server url>"` to `env` if Snipaya shows a port other than 47321.
+
+If your client supports Streamable HTTP servers directly, you do not need this bridge: use **Copy MCP config** in Snipaya instead.
+
+### MCP Bundle (.mcpb)
+
+1. Download `snipaya-mcp-<version>.mcpb` from the [latest release](https://github.com/krzysztofsurdy/snipaya-mcp/releases/latest).
+2. Open it with an MCP client that supports MCP Bundles, or drag it into the client's extensions settings.
+3. Paste the access token when asked. Leave the URL at its default unless Snipaya shows a different one.
+
+## Security model
+
+- **Local only.** Snipaya's server listens on `127.0.0.1` and accepts only loopback `Host` headers and requests without an `Origin` header, so websites in your browser cannot reach it. The bridge refuses any URL whose host is not `127.0.0.1` or `localhost`, and never sends an `Origin` header.
+- **Off by default.** Nothing listens until you turn on **Allow AI assistants**.
+- **Token.** Every request carries `Authorization: Bearer <token>`. Snipaya generates the token, and **Regenerate** in Settings revokes the old one. The bridge never writes the token to its logs.
+- **The bridge only forwards.** It adds no tools, stores nothing, and makes no other network connections. All actions run inside Snipaya, which shows connected assistants and recent activity in **Settings > AI Assistants**.
+
+## Tools
+
+The tools come from the Snipaya version you have installed. Snipaya 1.0 provides:
+
+| Tool | Title |
+| --- | --- |
+| `snipaya_get_canvas` | Get canvas |
+| `snipaya_render` | Render canvas |
+| `snipaya_add_image` | Add image |
+| `snipaya_add_arrow` | Add arrow or line |
+| `snipaya_add_shape` | Add shape |
+| `snipaya_add_text` | Add text |
+| `snipaya_add_step` | Add step number |
+| `snipaya_add_emoji` | Add emoji |
+| `snipaya_add_freehand` | Add freehand stroke |
+| `snipaya_add_magnifier` | Add magnifier |
+| `snipaya_add_callout` | Add callout |
+| `snipaya_add_spotlight` | Add spotlight |
+| `snipaya_add_measure` | Add measurement |
+| `snipaya_pick_color` | Pick color |
+| `snipaya_read_text` | Read text |
+| `snipaya_redact` | Redact sensitive data |
+| `snipaya_update_items` | Update elements |
+| `snipaya_delete_items` | Delete elements |
+| `snipaya_select` | Select elements |
+| `snipaya_arrange` | Arrange images |
+| `snipaya_set_crop` | Set crop |
+| `snipaya_undo` | Undo |
+| `snipaya_redo` | Redo |
+| `snipaya_tabs` | Manage tabs |
+| `snipaya_export` | Export image |
+| `snipaya_list_destinations` | List export destinations |
+| `snipaya_export_to` | Export to destination |
+| `snipaya_save_project` | Save project |
+
+## Troubleshooting
+
+The bridge writes one line to stderr (never stdout, which carries the protocol) and returns the same text as an MCP error to your client.
+
+| Message | Fix |
+| --- | --- |
+| `SNIPAYA_MCP_TOKEN is not set` | Copy the access token from **Settings > AI Assistants** into the `env` of your client config. |
+| `Cannot reach Snipaya at ...` | Open Snipaya and turn on **Allow AI assistants**. If the status shows an error, fix that first. Check that the URL matches **Server URL**. |
+| `Snipaya rejected the token` | The token changed, for example after **Regenerate**. Copy the current one. |
+| `Snipaya ended the session` | Snipaya restarted or the token changed. Restart the snipaya server in your client. |
+| `Refusing <host>` | The URL must point to `127.0.0.1` or `localhost`. Copy **Server URL** from Snipaya. |
+
+Run `npx -y snipaya-mcp --help` to see the options.
+
+## Development
+
+```sh
+npm ci
+npm run lint
+npm run typecheck
+npm test          # builds, then runs the bridge over stdio against a local test server
+npm run pack:mcpb # builds snipaya-mcp-<version>.mcpb with the official mcpb CLI
+```
+
+## License
+
+[MIT](LICENSE)

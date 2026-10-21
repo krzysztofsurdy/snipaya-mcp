@@ -2,7 +2,7 @@ import { chmodSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:f
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { readSettings, settingsFile } from '../src/settings.js'
+import { licenseAccepted, licenseFile, readSettings, settingsFile } from '../src/settings.js'
 
 const TOKEN = 'c'.repeat(64)
 
@@ -96,5 +96,41 @@ describe('readSettings', () => {
   it('reports a directory in place of the file', async () => {
     mkdirSync(file)
     expect(await readSettings(file)).toEqual({ kind: 'unreadable', file, reason: 'EISDIR' })
+  })
+})
+
+describe('licenseFile', () => {
+  it('points at the eula.json next to mcp.json', () => {
+    expect(licenseFile('/Users/someone')).toBe(
+      '/Users/someone/Library/Application Support/Snipaya/eula.json'
+    )
+  })
+})
+
+describe('licenseAccepted', () => {
+  it('is true when Snipaya recorded an accepted license agreement', async () => {
+    write({ version: '1.0', acceptedAt: 1_760_000_000_000 })
+    expect(await licenseAccepted(file)).toBe(true)
+  })
+
+  it('is false when the file is missing', async () => {
+    expect(await licenseAccepted(join(dir, 'absent', 'eula.json'))).toBe(false)
+  })
+
+  it.each([
+    ['invalid JSON', '{"version": "1.0"'],
+    ['an array', '[]'],
+    ['null', 'null'],
+    ['a numeric version', '{"version": 1, "acceptedAt": 1}'],
+    ['no acceptance time', '{"version": "1.0"}'],
+    ['a text acceptance time', '{"version": "1.0", "acceptedAt": "today"}']
+  ])('is false for %s', async (_name, content) => {
+    write(content)
+    expect(await licenseAccepted(file)).toBe(false)
+  })
+
+  it('is false for a directory in place of the file', async () => {
+    mkdirSync(file)
+    expect(await licenseAccepted(file)).toBe(false)
   })
 })

@@ -9,8 +9,11 @@ export type Settings =
 
 const TOKEN = /^[0-9a-f]{64}$/
 
-export const settingsFile = (home: string = homedir()): string =>
-  join(home, 'Library', 'Application Support', 'Snipaya', 'mcp.json')
+const userData = (home: string): string => join(home, 'Library', 'Application Support', 'Snipaya')
+
+export const settingsFile = (home: string = homedir()): string => join(userData(home), 'mcp.json')
+
+export const licenseFile = (home: string = homedir()): string => join(userData(home), 'eula.json')
 
 const isPort = (value: unknown): value is number =>
   typeof value === 'number' && Number.isInteger(value) && value > 0 && value < 65536
@@ -42,5 +45,16 @@ export const readSettings = async (file: string): Promise<Settings> => {
     enabled: enabled === true,
     ...(typeof token === 'string' && TOKEN.test(token) ? { token } : {}),
     ...(isPort(port) ? { port } : {})
+  }
+}
+
+export const licenseAccepted = async (file: string): Promise<boolean> => {
+  try {
+    const raw: unknown = JSON.parse(await readFile(file, 'utf8'))
+    if (typeof raw !== 'object' || raw === null) return false
+    const { version, acceptedAt } = raw as Record<string, unknown>
+    return typeof version === 'string' && typeof acceptedAt === 'number'
+  } catch {
+    return false
   }
 }

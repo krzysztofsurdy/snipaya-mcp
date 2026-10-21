@@ -217,6 +217,26 @@ describe('errors', () => {
     expect(stderr).not.toContain(TOKEN)
   })
 
+  it.runIf(process.platform === 'darwin')(
+    'tries to open Snipaya when its saved server is on but not running',
+    async () => {
+      saveSettings({ enabled: true, token: TOKEN, port: await unusedPort() })
+      const result = run([], { SNIPAYA_MCP_NO_LAUNCH: '', PATH: home })
+      expect(result.status).toBe(1)
+      expect(result.stderr).toMatch(/Snipaya is not running\. Opening it in the background\./)
+      expect(result.stderr).toMatch(/Cannot open Snipaya \(dev\.snipaya\.app\)/)
+      expect(result.stderr).not.toContain(TOKEN)
+    }
+  )
+
+  it('does not open Snipaya with SNIPAYA_MCP_NO_LAUNCH=1', async () => {
+    saveSettings({ enabled: true, token: TOKEN, port: await unusedPort() })
+    await expect(connectBridged({ SNIPAYA_MCP_NO_LAUNCH: '1', PATH: home })).rejects.toThrow(
+      /Cannot reach Snipaya/
+    )
+    expect(stderr).not.toMatch(/Opening it/)
+  })
+
   it('refuses a URL that is not on this machine', () => {
     for (const url of ['http://192.168.1.20:47321/mcp', 'http://localhost.example.com/mcp']) {
       const result = run(['--url', url], { SNIPAYA_MCP_TOKEN: TOKEN })

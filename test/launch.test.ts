@@ -33,6 +33,7 @@ const fakeDeps = (answers: Reachability[], overrides: Partial<LaunchDeps> = {}) 
     },
     launch: vi.fn(async () => undefined),
     reload: async () => config(47321),
+    licenseAccepted: vi.fn(async () => true),
     now: () => time,
     sleep: async (ms) => {
       time += ms
@@ -92,6 +93,33 @@ describe('ensureSnipaya', () => {
     expect(elapsed()).toBeGreaterThanOrEqual(10_000)
     expect(elapsed()).toBeLessThan(11_000)
   })
+
+  it('asks to accept the license agreement when Snipaya waits for it', async () => {
+    const { deps } = fakeDeps([], { licenseAccepted: vi.fn(async () => false) })
+    const outcome = ensureSnipaya(config(47321), deps)
+    await expect(outcome).rejects.toThrow(ConfigError)
+    await expect(outcome).rejects.toThrow(
+      'Opened Snipaya, but its MCP server starts only after you accept the license agreement. Accept it in Snipaya, then restart the snipaya server in your MCP client. If Snipaya shows no agreement, check the status in Snipaya > Settings > AI Assistants.'
+    )
+    expect(deps.launch).toHaveBeenCalledTimes(1)
+  })
+
+  it('connects when the license agreement is accepted while it waits', async () => {
+    const { deps } = fakeDeps(['refused', 'refused', 'answered'], {
+      licenseAccepted: vi.fn(async () => false)
+    })
+    expect(await ensureSnipaya(config(47321), deps)).toEqual(config(47321))
+    expect(deps.licenseAccepted).not.toHaveBeenCalled()
+  })
+
+  it.each<Reachability[]>([['answered'], ['unreachable'], ['refused', 'answered']])(
+    'never checks the license agreement when the server is not refused for good (%s)',
+    async (...answers) => {
+      const { deps } = fakeDeps(answers)
+      await ensureSnipaya(config(47321), deps)
+      expect(deps.licenseAccepted).not.toHaveBeenCalled()
+    }
+  )
 
   it('explains when Snipaya cannot be opened', async () => {
     const { deps } = fakeDeps(['refused'], {

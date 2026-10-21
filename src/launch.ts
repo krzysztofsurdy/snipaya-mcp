@@ -19,6 +19,7 @@ export interface LaunchDeps {
   probe: (url: URL) => Promise<Reachability>
   launch: () => Promise<void>
   reload: () => Promise<RunConfig>
+  licenseAccepted: () => Promise<boolean>
   now: () => number
   sleep: (ms: number) => Promise<void>
   log: (line: string) => void
@@ -57,6 +58,11 @@ export const ensureSnipaya = async (config: RunConfig, deps: LaunchDeps): Promis
     await deps.sleep(POLL_INTERVAL_MS)
     const current = await deps.reload()
     if ((await deps.probe(current.url)) === 'answered') return current
+  }
+  if (!(await deps.licenseAccepted())) {
+    throw new ConfigError(
+      `Opened Snipaya, but its MCP server starts only after you accept the license agreement. Accept it in Snipaya, then restart the snipaya server in your MCP client. If Snipaya shows no agreement, check the status in ${SETTINGS}.`
+    )
   }
   throw new ConfigError(
     `Opened Snipaya, but its MCP server did not answer within ${LAUNCH_TIMEOUT_MS / 1000} s. Check the status in ${SETTINGS}.`

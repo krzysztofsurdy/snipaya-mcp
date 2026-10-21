@@ -3,7 +3,7 @@ import { setTimeout as sleep } from 'node:timers/promises'
 import { startBridge } from './bridge.js'
 import { ConfigError, resolveConfig, USAGE, type RunConfig } from './config.js'
 import { ensureSnipaya, openSnipaya, probeUrl } from './launch.js'
-import { readSettings, settingsFile } from './settings.js'
+import { licenseAccepted, licenseFile, readSettings, settingsFile } from './settings.js'
 
 const write = (line: string): void => {
   process.stderr.write(`snipaya-mcp: ${line}\n`)
@@ -22,6 +22,7 @@ const main = async (): Promise<void> => {
     probe: probeUrl,
     launch: () => openSnipaya(),
     reload: () => load() as Promise<RunConfig>,
+    licenseAccepted: () => licenseAccepted(licenseFile()),
     now: Date.now,
     sleep: (ms) => sleep(ms),
     log: write

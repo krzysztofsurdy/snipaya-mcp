@@ -1,4 +1,7 @@
 import { spawn, spawnSync } from 'node:child_process'
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
@@ -16,23 +19,40 @@ const TOKEN = 'a'.repeat(64)
 
 let server: TestServer
 let stderr: string
+let home: string
 const clients: Client[] = []
 
 beforeEach(async () => {
   server = await startTestServer(TOKEN)
   stderr = ''
+  home = mkdtempSync(join(tmpdir(), 'snipaya-home-'))
 })
 
 afterEach(async () => {
   await Promise.all(clients.splice(0).map((client) => client.close().catch(() => undefined)))
   await server.close()
+  rmSync(home, { recursive: true, force: true })
 })
+
+const isolated = (env: Record<string, string>): Record<string, string> => ({
+  HOME: home,
+  SNIPAYA_MCP_NO_LAUNCH: '1',
+  ...env
+})
+
+const saveSettings = (settings: Record<string, unknown>): void => {
+  const dir = join(home, 'Library', 'Application Support', 'Snipaya')
+  mkdirSync(dir, { recursive: true })
+  writeFileSync(join(dir, 'mcp.json'), JSON.stringify(settings), { mode: 0o600 })
+}
+
+const serverPort = (): number => Number(new URL(server.url).port)
 
 const connectBridged = async (env?: Record<string, string>, args: string[] = []): Promise<Client> => {
   const transport = new StdioClientTransport({
     command: process.execPath,
     args: [BIN, ...args],
-    env: env ?? { SNIPAYA_MCP_URL: server.url, SNIPAYA_MCP_TOKEN: TOKEN },
+    env: isolated(env ?? { SNIPAYA_MCP_URL: server.url, SNIPAYA_MCP_TOKEN: TOKEN }),
     stderr: 'pipe'
   })
   transport.stderr?.on('data', (chunk: Buffer) => {
@@ -71,7 +91,7 @@ const until = async (check: () => boolean): Promise<void> => {
 
 const run = (args: string[], env: Record<string, string>) =>
   spawnSync(process.execPath, [BIN, ...args], {
-    env: { PATH: process.env.PATH ?? '', ...env },
+    env: isolated({ PATH: process.env.PATH ?? '', ...env }),
     input: '',
     encoding: 'utf8',
     timeout: 10000
@@ -146,6 +166,14 @@ describe('pass-through', () => {
     expect(result).toEqual({ content: [{ type: 'text', text: 'file:///tmp/snipaya' }] })
   })
 
+  it('reads the token and port that Snipaya saved', async () => {
+    saveSettings({ enabled: true, token: TOKEN, port: serverPort() })
+    const client = await connectBridged({})
+    expect((await client.listTools()).tools).toHaveLength(5)
+    expect(server.authorizations.every((value) => value === `Bearer ${TOKEN}`)).toBe(true)
+    expect(stderr).not.toContain(TOKEN)
+  })
+
   it('accepts the url and token as flags', async () => {
     const client = await connectBridged({}, ['--url', server.url, '--token', TOKEN])
     expect((await client.listTools()).tools).toHaveLength(5)
@@ -199,11 +227,20 @@ describe('errors', () => {
     }
   })
 
-  it('asks for the token when it is missing', () => {
+  it('explains that Snipaya was never set up when no token is set', () => {
     const result = run([], {})
     expect(result.status).toBe(1)
     expect(result.stderr.trim().split('\n')).toHaveLength(1)
-    expect(result.stderr).toMatch(/SNIPAYA_MCP_TOKEN.*Settings > AI Assistants/)
+    expect(result.stderr).toMatch(/settings were not found.*Allow AI assistants.*SNIPAYA_MCP_TOKEN/)
+  })
+
+  it('asks to turn the server on when Snipaya saved it as off', () => {
+    saveSettings({ enabled: false, token: TOKEN, port: serverPort() })
+    const result = run([], {})
+    expect(result.status).toBe(1)
+    expect(result.stderr.trim().split('\n')).toHaveLength(1)
+    expect(result.stderr).toMatch(/MCP server is off\. Turn on Allow AI assistants/)
+    expect(result.stderr).not.toContain(TOKEN)
   })
 })
 
@@ -228,7 +265,7 @@ describe('shutdown', () => {
 
   it('exits cleanly on SIGTERM', async () => {
     const child = spawn(process.execPath, [BIN], {
-      env: { PATH: process.env.PATH ?? '', SNIPAYA_MCP_URL: server.url, SNIPAYA_MCP_TOKEN: TOKEN },
+      env: isolated({ PATH: process.env.PATH ?? '', SNIPAYA_MCP_URL: server.url, SNIPAYA_MCP_TOKEN: TOKEN }),
       stdio: ['pipe', 'pipe', 'pipe']
     })
     let errors = ''

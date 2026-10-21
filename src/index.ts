@@ -1,13 +1,14 @@
 #!/usr/bin/env node
 import { startBridge } from './bridge.js'
 import { ConfigError, resolveConfig, USAGE } from './config.js'
+import { readSettings, settingsFile } from './settings.js'
 
 const write = (line: string): void => {
   process.stderr.write(`snipaya-mcp: ${line}\n`)
 }
 
 const main = async (): Promise<void> => {
-  const config = resolveConfig(process.argv.slice(2), process.env)
+  const config = resolveConfig(process.argv.slice(2), process.env, await readSettings(settingsFile()))
   if (config.kind === 'help') {
     process.stderr.write(`${USAGE}\n`)
     return

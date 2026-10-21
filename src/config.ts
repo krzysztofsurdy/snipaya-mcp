@@ -1,26 +1,43 @@
 import { parseArgs } from 'node:util'
+import type { Settings } from './settings.js'
 
 export const DEFAULT_URL = 'http://127.0.0.1:47321/mcp'
 
 const SETTINGS = 'Snipaya > Settings > AI Assistants'
 
+const TURN_ON = `turn on Allow AI assistants in ${SETTINGS}`
+
+const OR_SET_TOKEN = 'Or set SNIPAYA_MCP_TOKEN to the access token shown there.'
+
 const LOOPBACK_HOSTS = new Set(['127.0.0.1', 'localhost'])
+
+const UNFILLED_PLACEHOLDER = /^\$\{user_config\.[^}]*\}$/
 
 export const USAGE = `Usage: snipaya-mcp [--url <url>] [--token <token>]
 
 Bridges an MCP client that speaks stdio to the MCP server built into Snipaya.
 
-  --url    Snipaya MCP URL (env SNIPAYA_MCP_URL, default ${DEFAULT_URL})
-  --token  Snipaya MCP token (env SNIPAYA_MCP_TOKEN, required)
+  --url    Snipaya MCP URL (env SNIPAYA_MCP_URL, default: the port Snipaya saved, else ${DEFAULT_URL})
+  --token  Snipaya MCP token (env SNIPAYA_MCP_TOKEN, default: the token Snipaya saved)
 
-Turn the server on and copy both values in ${SETTINGS}.`
+With no options the bridge reads the token and port from Snipaya, and opens Snipaya
+in the background when it is not running. Set SNIPAYA_MCP_NO_LAUNCH=1 to never open it.
+
+Turn the server on in ${SETTINGS}.`
 
 export class ConfigError extends Error {}
 
-export type Config = { kind: 'run'; url: URL; token: string } | { kind: 'help' }
+export type Config = { kind: 'run'; url: URL; token: string; autoLaunch: boolean } | { kind: 'help' }
 
 const present = (...values: (string | undefined)[]): string | undefined =>
-  values.find((value) => value !== undefined && value.trim() !== '')?.trim()
+  values
+    .map((value) => value?.trim())
+    .find((value) => value !== undefined && value !== '' && !UNFILLED_PLACEHOLDER.test(value))
+
+const isOptOut = (value: string | undefined): boolean => {
+  const normalized = value?.trim().toLowerCase() ?? ''
+  return normalized !== '' && normalized !== '0' && normalized !== 'false'
+}
 
 const parseFlags = (argv: string[]) => {
   try {
@@ -55,14 +72,41 @@ const parseUrl = (raw: string): URL => {
   return url
 }
 
-export const resolveConfig = (argv: string[], env: NodeJS.ProcessEnv): Config => {
-  const flags = parseFlags(argv)
-  if (flags.help) return { kind: 'help' }
-  const token = present(flags.token, env.SNIPAYA_MCP_TOKEN)?.replace(/^bearer\s+/i, '')
-  if (!token) {
+const savedToken = (settings: Settings): string => {
+  if (settings.kind === 'missing') {
     throw new ConfigError(
-      `SNIPAYA_MCP_TOKEN is not set. Turn on the MCP server in ${SETTINGS} and copy the token.`
+      `No token set, and Snipaya's settings were not found at ${settings.file}. Install Snipaya, open it, then ${TURN_ON}. ${OR_SET_TOKEN}`
     )
   }
-  return { kind: 'run', url: parseUrl(present(flags.url, env.SNIPAYA_MCP_URL) ?? DEFAULT_URL), token }
+  if (settings.kind === 'unreadable') {
+    throw new ConfigError(
+      `No token set, and Snipaya's settings at ${settings.file} cannot be read: ${settings.reason}. Open Snipaya, then ${TURN_ON}. ${OR_SET_TOKEN}`
+    )
+  }
+  if (!settings.enabled) {
+    throw new ConfigError(`Snipaya's MCP server is off. Turn on Allow AI assistants in ${SETTINGS}.`)
+  }
+  if (settings.token === undefined) {
+    throw new ConfigError(
+      `Snipaya's settings at ${settings.file} hold no valid token. Open Snipaya to create one. ${OR_SET_TOKEN}`
+    )
+  }
+  return settings.token
+}
+
+const savedUrl = (settings: Settings): string =>
+  settings.kind === 'found' && settings.port !== undefined
+    ? `http://127.0.0.1:${settings.port}/mcp`
+    : DEFAULT_URL
+
+export const resolveConfig = (argv: string[], env: NodeJS.ProcessEnv, settings: Settings): Config => {
+  const flags = parseFlags(argv)
+  if (flags.help) return { kind: 'help' }
+  const token = present(flags.token, env.SNIPAYA_MCP_TOKEN)?.replace(/^bearer\s+/i, '') ?? savedToken(settings)
+  return {
+    kind: 'run',
+    url: parseUrl(present(flags.url, env.SNIPAYA_MCP_URL) ?? savedUrl(settings)),
+    token,
+    autoLaunch: settings.kind === 'found' && settings.enabled && !isOptOut(env.SNIPAYA_MCP_NO_LAUNCH)
+  }
 }

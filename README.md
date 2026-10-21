@@ -1,4 +1,14 @@
-# snipaya-mcp
+<p align="center">
+  <img src="https://raw.githubusercontent.com/krzysztofsurdy/snipaya-mcp/main/assets/snipaya-icon.png" width="128" height="128" alt="Snipaya app icon">
+</p>
+
+<h1 align="center">snipaya-mcp</h1>
+
+<p align="center">
+  <a href="https://github.com/krzysztofsurdy/snipaya-mcp/actions/workflows/ci.yml"><img src="https://github.com/krzysztofsurdy/snipaya-mcp/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI"></a>
+  <a href="https://www.npmjs.com/package/snipaya-mcp"><img src="https://img.shields.io/npm/v/snipaya-mcp" alt="npm version"></a>
+  <a href="https://github.com/krzysztofsurdy/snipaya-mcp/blob/main/LICENSE"><img src="https://img.shields.io/github/license/krzysztofsurdy/snipaya-mcp" alt="MIT license"></a>
+</p>
 
 Connect any MCP client that speaks stdio to [Snipaya](https://snipaya.app), the image and screenshot annotator for macOS. Your assistant can read the canvas, add arrows, text, shapes and callouts, redact sensitive data, crop, and export, while you watch the result in Snipaya.
 

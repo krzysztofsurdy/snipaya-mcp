@@ -27,7 +27,7 @@ Turn the server on in ${SETTINGS}.`
 
 export class ConfigError extends Error {}
 
-export type RunConfig = { kind: 'run'; url: URL; token: string; autoLaunch: boolean }
+export type RunConfig = { kind: 'run'; url: URL; token: string; autoLaunch: boolean; savedServerOn: boolean }
 
 export type Config = RunConfig | { kind: 'help' }
 
@@ -105,10 +105,12 @@ export const resolveConfig = (argv: string[], env: NodeJS.ProcessEnv, settings: 
   const flags = parseFlags(argv)
   if (flags.help) return { kind: 'help' }
   const token = present(flags.token, env.SNIPAYA_MCP_TOKEN)?.replace(/^bearer\s+/i, '') ?? savedToken(settings)
+  const savedServerOn = settings.kind === 'found' && settings.enabled
   return {
     kind: 'run',
     url: parseUrl(present(flags.url, env.SNIPAYA_MCP_URL) ?? savedUrl(settings)),
     token,
-    autoLaunch: settings.kind === 'found' && settings.enabled && !isOptOut(env.SNIPAYA_MCP_NO_LAUNCH)
+    autoLaunch: savedServerOn && !isOptOut(env.SNIPAYA_MCP_NO_LAUNCH),
+    savedServerOn
   }
 }

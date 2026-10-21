@@ -18,7 +18,8 @@ const config = (port: number, autoLaunch = true): RunConfig => ({
   kind: 'run',
   url: new URL(`http://127.0.0.1:${port}/mcp`),
   token: TOKEN,
-  autoLaunch
+  autoLaunch,
+  savedServerOn: true
 })
 
 const fakeDeps = (answers: Reachability[], overrides: Partial<LaunchDeps> = {}) => {

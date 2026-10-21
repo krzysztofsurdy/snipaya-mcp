@@ -9,6 +9,8 @@ const write = (line: string): void => {
   process.stderr.write(`snipaya-mcp: ${line}\n`)
 }
 
+const savedLicenseAccepted = (): Promise<boolean> => licenseAccepted(licenseFile())
+
 const main = async (): Promise<void> => {
   const argv = process.argv.slice(2)
   const load = async () => resolveConfig(argv, process.env, await readSettings(settingsFile()))
@@ -22,13 +24,18 @@ const main = async (): Promise<void> => {
     probe: probeUrl,
     launch: () => openSnipaya(),
     reload: () => load() as Promise<RunConfig>,
-    licenseAccepted: () => licenseAccepted(licenseFile()),
+    licenseAccepted: savedLicenseAccepted,
     now: Date.now,
     sleep: (ms) => sleep(ms),
     log: write
   })
   const log = (line: string): void => write(line.replaceAll(config.token, '[token]'))
-  const bridge = await startBridge({ url: config.url, token: config.token, log })
+  const bridge = await startBridge({
+    url: config.url,
+    token: config.token,
+    log,
+    ...(config.savedServerOn ? { licenseAccepted: savedLicenseAccepted } : {})
+  })
   const shutdown = (): void => {
     bridge.close().finally(() => process.exit(0))
   }

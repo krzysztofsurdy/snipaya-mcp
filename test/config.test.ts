@@ -13,7 +13,13 @@ describe('resolveConfig', () => {
   it('defaults to the Snipaya port on 127.0.0.1', () => {
     expect(DEFAULT_URL).toBe('http://127.0.0.1:47321/mcp')
     const config = resolveConfig([], { SNIPAYA_MCP_TOKEN: TOKEN }, MISSING)
-    expect(config).toEqual({ kind: 'run', url: new URL(DEFAULT_URL), token: TOKEN, autoLaunch: false })
+    expect(config).toEqual({
+      kind: 'run',
+      url: new URL(DEFAULT_URL),
+      token: TOKEN,
+      autoLaunch: false,
+      savedServerOn: false
+    })
   })
 
   it('reads the url and token from the environment', () => {
@@ -91,7 +97,8 @@ describe('resolveConfig with the settings Snipaya saved', () => {
       kind: 'run',
       url: new URL('http://127.0.0.1:47400/mcp'),
       token: SAVED,
-      autoLaunch: true
+      autoLaunch: true,
+      savedServerOn: true
     })
   })
 
@@ -174,5 +181,15 @@ describe('autoLaunch', () => {
     expect(resolveConfig([], { SNIPAYA_MCP_NO_LAUNCH: value }, SAVED_ON)).toMatchObject({
       autoLaunch: true
     })
+  })
+})
+
+describe('savedServerOn', () => {
+  it('is on only when Snipaya saved the server as on, even with SNIPAYA_MCP_NO_LAUNCH', () => {
+    const off: Settings = { kind: 'found', file: FILE, enabled: false, token: SAVED }
+    const env = { SNIPAYA_MCP_TOKEN: TOKEN, SNIPAYA_MCP_NO_LAUNCH: '1' }
+    expect(resolveConfig([], env, SAVED_ON)).toMatchObject({ savedServerOn: true })
+    expect(resolveConfig([], env, off)).toMatchObject({ savedServerOn: false })
+    expect(resolveConfig([], env, MISSING)).toMatchObject({ savedServerOn: false })
   })
 })

@@ -2,6 +2,7 @@ import { spawn, spawnSync } from 'node:child_process'
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { PassThrough } from 'node:stream'
 import { fileURLToPath } from 'node:url'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
@@ -11,7 +12,8 @@ import {
   LoggingMessageNotificationSchema,
   ToolListChangedNotificationSchema
 } from '@modelcontextprotocol/sdk/types.js'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { startBridge } from '../src/bridge.js'
 import { startTestServer, unusedPort, type TestServer } from './fixtures/server.js'
 
 const BIN = fileURLToPath(new URL('../dist/index.js', import.meta.url))
@@ -40,11 +42,13 @@ const isolated = (env: Record<string, string>): Record<string, string> => ({
   ...env
 })
 
-const saveSettings = (settings: Record<string, unknown>): void => {
+const saveUserData = (file: string, content: Record<string, unknown>): void => {
   const dir = join(home, 'Library', 'Application Support', 'Snipaya')
   mkdirSync(dir, { recursive: true })
-  writeFileSync(join(dir, 'mcp.json'), JSON.stringify(settings), { mode: 0o600 })
+  writeFileSync(join(dir, file), JSON.stringify(content), { mode: 0o600 })
 }
+
+const saveSettings = (settings: Record<string, unknown>): void => saveUserData('mcp.json', settings)
 
 const serverPort = (): number => Number(new URL(server.url).port)
 
@@ -215,8 +219,28 @@ describe('errors', () => {
       connectBridged({ SNIPAYA_MCP_URL: url, SNIPAYA_MCP_TOKEN: TOKEN })
     ).rejects.toThrow(/Turn on the MCP server in Snipaya > Settings > AI Assistants/)
     expect(stderr).toMatch(/Cannot reach Snipaya/)
+    expect(stderr).not.toMatch(/license agreement/)
     expect(stderr).not.toMatch(/\n\s+at /)
     expect(stderr).not.toContain(TOKEN)
+  })
+
+  it('asks to accept the license agreement when the saved server does not answer', async () => {
+    saveSettings({ enabled: true, token: TOKEN, port: await unusedPort() })
+    const pending =
+      /Cannot reach Snipaya at http:\/\/127\.0\.0\.1:\d+\/mcp\. Its MCP server starts only after you accept the license agreement: open Snipaya, accept it, then restart the snipaya server in your MCP client\. If Snipaya shows no agreement, turn on the MCP server in Snipaya > Settings > AI Assistants\./
+    await expect(connectBridged({ PATH: home })).rejects.toThrow(pending)
+    expect(stderr).toMatch(pending)
+    expect(stderr).not.toMatch(/Is Snipaya open\?/)
+    expect(stderr).not.toContain(TOKEN)
+  })
+
+  it('keeps the usual message when the license agreement was accepted', async () => {
+    saveSettings({ enabled: true, token: TOKEN, port: await unusedPort() })
+    saveUserData('eula.json', { version: '1.0', acceptedAt: 1_760_000_000_000 })
+    await expect(connectBridged({ PATH: home })).rejects.toThrow(
+      /Cannot reach Snipaya at .*\. Is Snipaya open\? Turn on the MCP server/
+    )
+    expect(stderr).not.toMatch(/license agreement/)
   })
 
   it.runIf(process.platform === 'darwin')(
@@ -263,6 +287,54 @@ describe('errors', () => {
     expect(result.stderr.trim().split('\n')).toHaveLength(1)
     expect(result.stderr).toMatch(/MCP server is off\. Turn on Allow AI assistants/)
     expect(result.stderr).not.toContain(TOKEN)
+  })
+})
+
+describe('license agreement', () => {
+  const initialize = {
+    jsonrpc: '2.0',
+    id: 1,
+    method: 'initialize',
+    params: {
+      protocolVersion: '2025-06-18',
+      capabilities: {},
+      clientInfo: { name: 'license-test', version: '1.0.0' }
+    }
+  }
+
+  const firstReply = async (url: string, licenseAccepted: () => Promise<boolean>) => {
+    const stdin = new PassThrough()
+    const stdout = new PassThrough()
+    const bridge = await startBridge({
+      url: new URL(url),
+      token: TOKEN,
+      stdin,
+      stdout,
+      log: () => undefined,
+      licenseAccepted
+    })
+    const reply = new Promise<{ result?: unknown; error?: { message: string } }>((resolve) => {
+      stdout.once('data', (chunk: Buffer) => resolve(JSON.parse(chunk.toString('utf8'))))
+    })
+    stdin.write(`${JSON.stringify(initialize)}\n`)
+    try {
+      return await reply
+    } finally {
+      await bridge.close()
+    }
+  }
+
+  it('is never read while Snipaya answers', async () => {
+    const licenseAccepted = vi.fn(async () => false)
+    expect(await firstReply(server.url, licenseAccepted)).toHaveProperty('result')
+    expect(licenseAccepted).not.toHaveBeenCalled()
+  })
+
+  it('is read when Snipaya does not answer', async () => {
+    const licenseAccepted = vi.fn(async () => false)
+    const reply = await firstReply(`http://127.0.0.1:${await unusedPort()}/mcp`, licenseAccepted)
+    expect(reply.error?.message).toMatch(/accept the license agreement/)
+    expect(licenseAccepted).toHaveBeenCalled()
   })
 })
 

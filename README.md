@@ -60,7 +60,10 @@ For clients configured with an `mcpServers` JSON file:
   "mcpServers": {
     "snipaya": {
       "command": "npx",
-      "args": ["-y", "snipaya-mcp"]
+      "args": ["-y", "snipaya-mcp"],
+      "env": {
+        "npm_config_registry": "https://registry.npmjs.org/"
+      }
     }
   }
 }
@@ -75,6 +78,7 @@ For a custom setup, pass the values in `env` instead:
       "command": "npx",
       "args": ["-y", "snipaya-mcp"],
       "env": {
+        "npm_config_registry": "https://registry.npmjs.org/",
         "SNIPAYA_MCP_TOKEN": "<access token>",
         "SNIPAYA_MCP_URL": "<server url>"
       }
@@ -151,6 +155,7 @@ The bridge writes one line to stderr (never stdout, which carries the protocol) 
 | `Snipaya rejected the token` | The token changed, for example after **Regenerate**. Remove `SNIPAYA_MCP_TOKEN` to use the saved token, or copy the current one. |
 | `Snipaya ended the session` | Snipaya restarted or the token changed. Restart the snipaya server in your client. |
 | `Refusing <host>` | The URL must point to `127.0.0.1` or `localhost`. Copy **Server URL** from Snipaya. |
+| `CONNECTION_CLOSED` or `Failed to connect`, with `npm error 404 ... is not in this registry` in the MCP log | The bridge never started: a project `.npmrc` points npm at a private registry, and MCP clients start the server in the project folder. Set `npm_config_registry` to `https://registry.npmjs.org/` for the snipaya server, in `env` as in the JSON config above. In Claude Code, add the server once for every project with `claude mcp add --scope user snipaya -e npm_config_registry=https://registry.npmjs.org/ -- npx -y snipaya-mcp`. Claude Code keeps MCP server logs in `~/Library/Caches/claude-cli-nodejs/<project>/mcp-logs-snipaya/`. |
 
 Run `npx -y snipaya-mcp --help` to see the options.
 

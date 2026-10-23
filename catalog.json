@@ -1,5 +1,5 @@
 {
-  "snipaya": "1.3.3",
+  "snipaya": "1.4.0",
   "instructions": "Call snipaya_get_canvas first to see what is already open.\nOne tab is one finished image. Put related images (before and after, steps of a flow, several screens of one feature) on the same canvas.\nStart unrelated work in a new tab: add the first image with snipaya_add_image placement \"new-tab\" and the rest with placement \"add\".\nLay images out with snipaya_arrange and explain them with annotations: arrows, text, step numbers, callouts and highlights.\nCheck the result with snipaya_render, then export it with snipaya_export or snipaya_export_to.",
   "tools": [
     {
@@ -237,7 +237,7 @@
     {
       "name": "snipaya_add_shape",
       "title": "Add shape",
-      "description": "Add a rectangle frame, ellipse, highlighter box or blur (pixelate sensitive data) over a region.",
+      "description": "Add a rectangle frame, ellipse, highlighter box or blur (pixelate sensitive data) over a region. For blur, pixelSize sets the block size; larger is coarser.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -311,6 +311,12 @@
               }
             },
             "description": "Optional style. Omitted fields use the user’s current tool style. Brand colors: coral #EC534E, papaya #FE9440."
+          },
+          "pixelSize": {
+            "description": "Blur block size in the units of rect. Defaults to the user’s Blur tool size.",
+            "type": "number",
+            "minimum": 4,
+            "maximum": 400
           }
         },
         "required": [
@@ -1117,7 +1123,7 @@
     {
       "name": "snipaya_redact",
       "title": "Redact sensitive data",
-      "description": "Find emails, phone numbers, IBANs, card numbers, tokens, IP addresses, passwords and faces (on-device) and blur them in one undo step. Defaults to every image and category. Returns the blur ids and counts.",
+      "description": "Find emails, phone numbers, IBANs, card numbers, tokens, IP addresses, passwords and faces (on-device) and blur them in one undo step. By default the blocks are sized to the text so secrets can’t be read back; pixelSize sets a coarser minimum. Defaults to every image and category. Returns the blur ids and counts.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -1148,6 +1154,12 @@
                 "face"
               ]
             }
+          },
+          "pixelSize": {
+            "description": "Minimum blur block size in canvas units.",
+            "type": "number",
+            "minimum": 4,
+            "maximum": 400
           }
         },
         "$schema": "http://json-schema.org/draft-07/schema#"

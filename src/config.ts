@@ -27,6 +27,8 @@ Turn the server on in ${SETTINGS}.`
 
 export class ConfigError extends Error {}
 
+export class UnavailableError extends ConfigError {}
+
 export type RunConfig = { kind: 'run'; url: URL; token: string; autoLaunch: boolean; savedServerOn: boolean }
 
 export type Config = RunConfig | { kind: 'help' }
@@ -76,20 +78,20 @@ const parseUrl = (raw: string): URL => {
 
 const savedToken = (settings: Settings): string => {
   if (settings.kind === 'missing') {
-    throw new ConfigError(
+    throw new UnavailableError(
       `No token set, and Snipaya's settings were not found at ${settings.file}. Install Snipaya, open it, then ${TURN_ON}. ${OR_SET_TOKEN}`
     )
   }
   if (settings.kind === 'unreadable') {
-    throw new ConfigError(
+    throw new UnavailableError(
       `No token set, and Snipaya's settings at ${settings.file} cannot be read: ${settings.reason}. Open Snipaya, then ${TURN_ON}. ${OR_SET_TOKEN}`
     )
   }
   if (!settings.enabled) {
-    throw new ConfigError(`Snipaya's MCP server is off. Turn on Allow AI assistants in ${SETTINGS}.`)
+    throw new UnavailableError(`Snipaya's MCP server is off. Turn on Allow AI assistants in ${SETTINGS}.`)
   }
   if (settings.token === undefined) {
-    throw new ConfigError(
+    throw new UnavailableError(
       `Snipaya's settings at ${settings.file} hold no valid token. Open Snipaya to create one. ${OR_SET_TOKEN}`
     )
   }
@@ -104,11 +106,12 @@ const savedUrl = (settings: Settings): string =>
 export const resolveConfig = (argv: string[], env: NodeJS.ProcessEnv, settings: Settings): Config => {
   const flags = parseFlags(argv)
   if (flags.help) return { kind: 'help' }
+  const url = parseUrl(present(flags.url, env.SNIPAYA_MCP_URL) ?? savedUrl(settings))
   const token = present(flags.token, env.SNIPAYA_MCP_TOKEN)?.replace(/^bearer\s+/i, '') ?? savedToken(settings)
   const savedServerOn = settings.kind === 'found' && settings.enabled
   return {
     kind: 'run',
-    url: parseUrl(present(flags.url, env.SNIPAYA_MCP_URL) ?? savedUrl(settings)),
+    url,
     token,
     autoLaunch: savedServerOn && !isOptOut(env.SNIPAYA_MCP_NO_LAUNCH),
     savedServerOn

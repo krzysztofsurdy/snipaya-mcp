@@ -1,7 +1,7 @@
 import { createServer, type Server, type Socket } from 'node:net'
 import type { AddressInfo } from 'node:net'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { ConfigError, type RunConfig } from '../src/config.js'
+import { ConfigError, UnavailableError, type RunConfig } from '../src/config.js'
 import {
   BUNDLE_ID,
   ensureSnipaya,
@@ -131,6 +131,15 @@ describe('ensureSnipaya', () => {
     await expect(ensureSnipaya(config(47321), deps)).rejects.toThrow(
       /Cannot open Snipaya \(dev\.snipaya\.app\)\. Install it from https:\/\/snipaya\.app or open it yourself\./
     )
+  })
+
+  it.each<[string, Partial<LaunchDeps>, Reachability[]]>([
+    ['cannot be opened', { launch: vi.fn(async () => Promise.reject(new Error('no app'))) }, ['refused']],
+    ['never answers', {}, []],
+    ['waits for the license agreement', { licenseAccepted: vi.fn(async () => false) }, []]
+  ])('reports Snipaya as unavailable when it %s', async (_, overrides, answers) => {
+    const { deps } = fakeDeps(answers, overrides)
+    await expect(ensureSnipaya(config(47321), deps)).rejects.toThrow(UnavailableError)
   })
 
   it('stops waiting when the settings turn invalid', async () => {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ConfigError, DEFAULT_URL, resolveConfig } from '../src/config.js'
+import { ConfigError, DEFAULT_URL, resolveConfig, UnavailableError } from '../src/config.js'
 import type { Settings } from '../src/settings.js'
 
 const TOKEN = 'f'.repeat(64)
@@ -156,6 +156,28 @@ describe('resolveConfig with the settings Snipaya saved', () => {
   it('explains a saved token that is not valid', () => {
     const settings: Settings = { kind: 'found', file: FILE, enabled: true }
     expect(() => resolveConfig([], {}, settings)).toThrow(/no valid token.*Open Snipaya.*SNIPAYA_MCP_TOKEN/)
+  })
+
+  it.each<[string, Settings]>([
+    ['missing', MISSING],
+    ['unreadable', { kind: 'unreadable', file: FILE, reason: 'EACCES' }],
+    ['off', { kind: 'found', file: FILE, enabled: false, token: SAVED }],
+    ['without a token', { kind: 'found', file: FILE, enabled: true }]
+  ])('reports saved settings that are %s as Snipaya being unavailable', (_, settings) => {
+    expect(() => resolveConfig([], {}, settings)).toThrow(UnavailableError)
+  })
+
+  it('keeps a bad URL or flag a plain ConfigError even without settings', () => {
+    for (const argv of [['--url', 'http://example.com/mcp'], ['--nope']]) {
+      let thrown: unknown
+      try {
+        resolveConfig(argv, {}, MISSING)
+      } catch (error) {
+        thrown = error
+      }
+      expect(thrown).toBeInstanceOf(ConfigError)
+      expect(thrown).not.toBeInstanceOf(UnavailableError)
+    }
   })
 
   it('shows help even when the settings are missing', () => {

@@ -1,6 +1,6 @@
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
-import { ConfigError, type RunConfig } from './config.js'
+import { UnavailableError, type RunConfig } from './config.js'
 
 export const BUNDLE_ID = 'dev.snipaya.app'
 
@@ -51,7 +51,7 @@ export const ensureSnipaya = async (config: RunConfig, deps: LaunchDeps): Promis
   try {
     await deps.launch()
   } catch {
-    throw new ConfigError(`Cannot open Snipaya (${BUNDLE_ID}). Install it from https://snipaya.app or open it yourself.`)
+    throw new UnavailableError(`Cannot open Snipaya (${BUNDLE_ID}). Install it from https://snipaya.app or open it yourself.`)
   }
   const deadline = deps.now() + LAUNCH_TIMEOUT_MS
   while (deps.now() < deadline) {
@@ -60,11 +60,11 @@ export const ensureSnipaya = async (config: RunConfig, deps: LaunchDeps): Promis
     if ((await deps.probe(current.url)) === 'answered') return current
   }
   if (!(await deps.licenseAccepted())) {
-    throw new ConfigError(
+    throw new UnavailableError(
       `Opened Snipaya, but its MCP server starts only after you accept the license agreement. Accept it in Snipaya, then restart the snipaya server in your MCP client. If Snipaya shows no agreement, check the status in ${SETTINGS}.`
     )
   }
-  throw new ConfigError(
+  throw new UnavailableError(
     `Opened Snipaya, but its MCP server did not answer within ${LAUNCH_TIMEOUT_MS / 1000} s. Check the status in ${SETTINGS}.`
   )
 }

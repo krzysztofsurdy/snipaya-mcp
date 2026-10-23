@@ -34,115 +34,115 @@
   "tools": [
     {
       "name": "snipaya_get_canvas",
-      "description": "Get canvas"
+      "description": "Describe the open tabs and the active canvas: images (id, position, size, original pixel size), annotations (id, kind, geometry, style, text, anchors), selection and crop. Call this first."
     },
     {
       "name": "snipaya_render",
-      "description": "Render canvas"
+      "description": "Return a PNG of the canvas (or only the given element ids) so you can see what the user sees. Downscaled to maxSize on the longest side."
     },
     {
       "name": "snipaya_add_image",
-      "description": "Add image"
+      "description": "Add a screenshot or image to the canvas from an absolute file path or a data URL. Related images (before and after, steps of a flow) go on one canvas with placement \"add\". Use \"new-tab\" only to start a new, unrelated image, never one tab per related image."
     },
     {
       "name": "snipaya_add_arrow",
-      "description": "Add arrow or line"
+      "description": "Draw a straight arrow (head at \"to\") or, with head false, a line. curved true draws a gentle curved arrow. Ends landing on an image are anchored to it."
     },
     {
       "name": "snipaya_add_shape",
-      "description": "Add shape"
+      "description": "Add a rectangle frame, ellipse, highlighter box or blur (pixelate sensitive data) over a region."
     },
     {
       "name": "snipaya_add_text",
-      "description": "Add text"
+      "description": "Add a text label with its top-left corner at \"at\". Supports \\n for new lines."
     },
     {
       "name": "snipaya_add_step",
-      "description": "Add step number"
+      "description": "Add an auto-numbered step badge (1, 2, 3...) centered at \"at\", for step-by-step guides. size is the badge diameter; make it larger on big screenshots."
     },
     {
       "name": "snipaya_add_emoji",
-      "description": "Add emoji"
+      "description": "Place an emoji sticker centered at \"at\"."
     },
     {
       "name": "snipaya_add_freehand",
-      "description": "Add freehand stroke"
+      "description": "Draw a freehand pen line, highlighter stroke or curved arrow through the given points. The path is smoothed like a hand-drawn stroke."
     },
     {
       "name": "snipaya_add_magnifier",
-      "description": "Add magnifier"
+      "description": "Add a round magnifying lens at \"lens\" that shows a zoomed view of the area around \"source\". radius defaults to about 8% of the short side of the image under the source."
     },
     {
       "name": "snipaya_add_callout",
-      "description": "Add callout"
+      "description": "Add a speech-bubble callout with text in \"rect\" and a tail pointing at \"tail\" (defaults to below the box). The box grows to fit the text."
     },
     {
       "name": "snipaya_add_spotlight",
-      "description": "Add spotlight"
+      "description": "Dim everything except \"rect\" (form rect or ellipse) to draw attention to it. dim (0 to 1) changes the user’s spotlight darkness setting for all spotlights."
     },
     {
       "name": "snipaya_add_measure",
-      "description": "Add measurement"
+      "description": "Draw a measuring line from \"from\" to \"to\" labeled with its length in image pixels. Returns the label."
     },
     {
       "name": "snipaya_pick_color",
-      "description": "Pick color"
+      "description": "Read the color of the image pixel at \"at\" and return it as a #rrggbb hex. Changes nothing."
     },
     {
       "name": "snipaya_read_text",
-      "description": "Read text"
+      "description": "Recognize text (on-device OCR) in the images and return the lines in reading order with their rects. Limit it with rect and/or imageId. Rects use the relativeTo space when set."
     },
     {
       "name": "snipaya_redact",
-      "description": "Redact sensitive data"
+      "description": "Find emails, phone numbers, IBANs, card numbers, tokens, IP addresses, passwords and faces (on-device) and blur them in one undo step. Defaults to every image and category. Returns the blur ids and counts."
     },
     {
       "name": "snipaya_update_items",
-      "description": "Update elements"
+      "description": "Change existing elements by id: move (x, y), resize (width, height), rotate (degrees), change text, or restyle. For steps, width or style.fontSize resizes the badge. All updates are one undo step."
     },
     {
       "name": "snipaya_delete_items",
-      "description": "Delete elements"
+      "description": "Delete elements (images or annotations) by id. One undo step."
     },
     {
       "name": "snipaya_select",
-      "description": "Select elements"
+      "description": "Select elements by id so the user sees which ones you mean. An empty list clears the selection."
     },
     {
       "name": "snipaya_arrange",
-      "description": "Arrange images"
+      "description": "Lay out all images of the tab in a row, column or grid with an optional gap."
     },
     {
       "name": "snipaya_set_crop",
-      "description": "Set crop"
+      "description": "Crop exports to a rectangle, or pass null to remove the crop."
     },
     {
       "name": "snipaya_undo",
-      "description": "Undo"
+      "description": "Undo the last change on the tab (yours or the user’s)."
     },
     {
       "name": "snipaya_redo",
-      "description": "Redo"
+      "description": "Redo the last undone change on the tab."
     },
     {
       "name": "snipaya_tabs",
-      "description": "Manage tabs"
+      "description": "Open a new empty tab, switch to a tab, or close a tab (closing never discards unsaved work without asking the user)."
     },
     {
       "name": "snipaya_export",
-      "description": "Export image"
+      "description": "Export the canvas (or given ids) as PNG or JPG. With path, writes the file (absolute path, matching extension, refuses to overwrite unless overwrite is true); without path, returns the image."
     },
     {
       "name": "snipaya_list_destinations",
-      "description": "List export destinations"
+      "description": "List the export destinations the user set up (share menu, open with an app, quick save folder, uploaders, Jira, Confluence) with their ids for snipaya_export_to."
     },
     {
       "name": "snipaya_export_to",
-      "description": "Export to destination"
+      "description": "Render the canvas (or given ids) as PNG and send it to a destination from snipaya_list_destinations. Uploads to network destinations always ask the user to confirm first. Returns the link or file path."
     },
     {
       "name": "snipaya_save_project",
-      "description": "Save project"
+      "description": "Save the tab as a .snipaya project. Without path, saves to the tab’s existing file; a tab that was never saved needs an absolute path."
     }
   ],
   "tools_generated": true,
@@ -178,5 +178,56 @@
       "default": "",
       "required": false
     }
-  }
+  },
+  "prompts": [
+    {
+      "name": "explain_bug",
+      "description": "Mark up a screenshot with steps, an arrow and a callout so the bug is obvious.",
+      "arguments": [
+        "issue"
+      ],
+      "text": "Mark up the screenshot on the Snipaya canvas so anyone can see the bug at a glance.\n\n1. Call snipaya_get_canvas to see the open tabs and images. If there is no image, ask the user for a screenshot, add it with snipaya_add_image and call snipaya_get_canvas again.\n2. Call snipaya_render to look at the screenshot. Use snipaya_read_text if you need the exact position of a label or message.\n3. Find the problem in the screenshot. If you cannot tell what is wrong, ask the user what to point at before drawing anything.\n4. Pass relativeTo with the image id in every drawing call, so you can use the image pixels you see in snipaya_render.\n5. If it takes several actions to reach the bug, mark each one in order with snipaya_add_step.\n6. Point at the broken part with snipaya_add_arrow. If it is small, also frame it with snipaya_add_shape (kind rect).\n7. Add one snipaya_add_callout with a short sentence on what is wrong and what was expected, with its tail on the problem and the box clear of it.\n8. Call snipaya_render again and check that nothing important is covered. Move or resize with snipaya_update_items, or take back a mistake with snipaya_undo.\n9. Tell the user what you marked. Do not export or share unless they ask."
+    },
+    {
+      "name": "redact_before_sharing",
+      "description": "Blur emails, phone numbers, tokens, passwords, faces and other private details.",
+      "arguments": [
+        "also_hide"
+      ],
+      "text": "Hide private data in the images on the Snipaya canvas before the user shares them.\n\n1. Call snipaya_get_canvas to see the open tabs and images. If there is no image, tell the user there is nothing to redact and stop.\n2. Call snipaya_redact once without arguments. It finds and blurs emails, phone numbers, IBANs, card numbers, tokens, IP addresses, passwords and faces in every image, on device.\n3. Call snipaya_render and look for private details it missed, such as names, account numbers, addresses, internal links or private messages. Use snipaya_read_text to get the exact position of text.\n4. Cover each missed item with snipaya_add_shape (kind blur), passing relativeTo with the image id and a rect slightly larger than the item.\n5. Call snipaya_render again and check that every item is fully covered.\n6. Tell the user what was blurred and ask them to check the result before sharing. Do not export or share unless they ask."
+    },
+    {
+      "name": "finish_screenshot",
+      "description": "Crop to what matters and frame the image on a background with padding.",
+      "arguments": [
+        "background"
+      ],
+      "text": "Make the screenshot on the Snipaya canvas look finished and ready to share.\n\n1. Call snipaya_get_canvas to see the open tabs and images. If there is no image, ask the user for a screenshot, add it with snipaya_add_image and call snipaya_get_canvas again.\n2. Call snipaya_render to look at it.\n3. If there are several images, ask the user whether they belong together. If they do, lay them out with snipaya_arrange.\n4. If there are empty borders or parts unrelated to the subject, crop them away with snipaya_set_crop, passing relativeTo with the image id. Skip this when the whole image matters.\n5. Build a beautify object with a background that suits the screenshot: sunset, ocean, mint, mono, solid (with solidColor as #rrggbb) or transparent.\n6. Start with padding about 64, radius about 12 and shadow true. Preview it with snipaya_render and that beautify object, adjust and render again until it looks balanced.\n7. The frame is only applied when rendering or exporting, so pass the same beautify object when you export. Ask the user how to export: a file with snipaya_export (format png), or a destination from snipaya_list_destinations sent with snipaya_export_to."
+    },
+    {
+      "name": "copy_text",
+      "description": "Read the text in a screenshot on device and return it as plain text.",
+      "arguments": [
+        "area"
+      ],
+      "text": "Copy the text out of the images on the Snipaya canvas.\n\n1. Call snipaya_get_canvas to see the open tabs and images. If there is no image, ask the user for a screenshot, add it with snipaya_add_image and call snipaya_get_canvas again.\n2. Call snipaya_read_text once per image (imageId), in the order the images appear, so the text stays grouped by image.\n3. Return the text in a code block, keeping the line order and line breaks. Do not correct, translate or summarize it unless the user asks.\n4. Do not change the canvas."
+    },
+    {
+      "name": "make_walkthrough",
+      "description": "Lay out several screenshots in order and number the steps into one guide image.",
+      "arguments": [
+        "topic"
+      ],
+      "text": "Turn the screenshots on the Snipaya canvas into one step-by-step walkthrough image.\n\n1. Call snipaya_get_canvas to see the open tabs and images. A walkthrough needs at least two screenshots. If there are fewer, ask the user for the missing ones and add each with snipaya_add_image (placement \"add\").\n2. Call snipaya_render to look at the screenshots and work out what they show and in which order. Ask the user if the order is not clear.\n3. Lay the images out with snipaya_arrange (row for two or three, grid for more). If an image is out of order, move it with snipaya_update_items.\n4. Call snipaya_get_canvas again, because the images have moved.\n5. Go through the screenshots in order and mark the action to take on each with snipaya_add_step, passing relativeTo with that image id. Steps number themselves, so add them in walkthrough order.\n6. Next to each step, add a short instruction that starts with a verb, with snipaya_add_callout or snipaya_add_text. Use snipaya_add_arrow when the step badge is far from what it refers to.\n7. Call snipaya_render and check that every step is readable and nothing important is covered. Fix positions with snipaya_update_items.\n8. Ask the user whether to save it with snipaya_export or send it with snipaya_export_to."
+    },
+    {
+      "name": "compare_before_after",
+      "description": "Put two screenshots side by side in one tab, label them and mark what changed.",
+      "arguments": [
+        "change"
+      ],
+      "text": "Show the before and after of a change side by side in one Snipaya tab, so anyone can see what changed.\n\n1. Call snipaya_get_canvas to see the open tabs and images. Both screenshots belong in one tab, never in separate tabs. If either is missing, ask the user for it.\n2. If the screenshots are not on the canvas yet, add them with snipaya_add_image. Add the first one with placement \"new-tab\" if the active tab holds unrelated images, otherwise with \"add\".\n3. Add the second one with placement \"add\", so both land in the same tab.\n4. Lay them out side by side with snipaya_arrange (layout row), the before image on the left. If they are the wrong way round, swap their positions with snipaya_update_items.\n5. Call snipaya_get_canvas again, because the images have moved.\n6. Label them with snipaya_add_text: \"Before\" on the left image and \"After\" on the right one, in a clear spot near the top, passing relativeTo with each image id.\n7. Call snipaya_render and compare the two screenshots to find what changed. If you cannot tell, ask the user what to point at before drawing anything.\n8. Mark each change with snipaya_add_arrow or snipaya_add_shape (kind highlight), passing relativeTo with the image id.\n9. Call snipaya_render again and check that the labels and marks are readable and cover nothing important. Fix positions with snipaya_update_items.\n10. Ask the user whether to save it with snipaya_export or send it with snipaya_export_to."
+    }
+  ],
+  "prompts_generated": true
 }

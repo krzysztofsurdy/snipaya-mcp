@@ -1,0 +1,1795 @@
+{
+  "snipaya": "1.3.3",
+  "instructions": "Call snipaya_get_canvas first to see what is already open.\nOne tab is one finished image. Put related images (before and after, steps of a flow, several screens of one feature) on the same canvas.\nStart unrelated work in a new tab: add the first image with snipaya_add_image placement \"new-tab\" and the rest with placement \"add\".\nLay images out with snipaya_arrange and explain them with annotations: arrows, text, step numbers, callouts and highlights.\nCheck the result with snipaya_render, then export it with snipaya_export or snipaya_export_to.",
+  "tools": [
+    {
+      "name": "snipaya_get_canvas",
+      "title": "Get canvas",
+      "description": "Describe the open tabs and the active canvas: images (id, position, size, original pixel size), annotations (id, kind, geometry, style, text, anchors), selection and crop. Call this first.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "tabId": {
+            "description": "Target tab id. Defaults to the active tab.",
+            "type": "string"
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "openWorldHint": false
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "snipaya_render",
+      "title": "Render canvas",
+      "description": "Return a PNG of the canvas (or only the given element ids) so you can see what the user sees. Downscaled to maxSize on the longest side.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "tabId": {
+            "description": "Target tab id. Defaults to the active tab.",
+            "type": "string"
+          },
+          "ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "maxSize": {
+            "type": "integer",
+            "minimum": 64,
+            "maximum": 4096
+          },
+          "beautify": {
+            "description": "Frame the image on a background. true uses the user’s beautify settings, an object overrides some of them, false turns it off. Omit to follow the user’s setting.",
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "background": {
+                    "type": "string",
+                    "enum": [
+                      "sunset",
+                      "ocean",
+                      "mint",
+                      "mono",
+                      "solid",
+                      "transparent"
+                    ]
+                  },
+                  "solidColor": {
+                    "type": "string",
+                    "pattern": "^#[0-9a-f]{6}$"
+                  },
+                  "padding": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 400
+                  },
+                  "radius": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 100
+                  },
+                  "shadow": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "openWorldHint": false
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "snipaya_add_image",
+      "title": "Add image",
+      "description": "Add a screenshot or image to the canvas from an absolute file path or a data URL. Related images (before and after, steps of a flow) go on one canvas with placement \"add\". Use \"new-tab\" only to start a new, unrelated image, never one tab per related image.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "description": "Absolute path to an image file (max 25 MB).",
+            "type": "string"
+          },
+          "dataUrl": {
+            "type": "string",
+            "pattern": "^data:image\\/(png|jpeg|webp|gif);base64,"
+          },
+          "placement": {
+            "default": "add",
+            "type": "string",
+            "enum": [
+              "add",
+              "new-tab"
+            ]
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "openWorldHint": false
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "snipaya_add_arrow",
+      "title": "Add arrow or line",
+      "description": "Draw a straight arrow (head at \"to\") or, with head false, a line. curved true draws a gentle curved arrow. Ends landing on an image are anchored to it.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "tabId": {
+            "description": "Target tab id. Defaults to the active tab.",
+            "type": "string"
+          },
+          "relativeTo": {
+            "description": "Image id from snipaya_get_canvas. When set, all coordinates in this call are pixels of that image as captured (the same pixels you see in snipaya_render of that image).",
+            "type": "string"
+          },
+          "from": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number"
+              },
+              "y": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "x",
+              "y"
+            ],
+            "description": "A point. Canvas coordinates, or image pixels when relativeTo is set."
+          },
+          "to": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number"
+              },
+              "y": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "x",
+              "y"
+            ],
+            "description": "A point. Canvas coordinates, or image pixels when relativeTo is set."
+          },
+          "head": {
+            "default": true,
+            "type": "boolean"
+          },
+          "curved": {
+            "default": false,
+            "type": "boolean"
+          },
+          "style": {
+            "type": "object",
+            "properties": {
+              "color": {
+                "type": "string",
+                "pattern": "^#[0-9a-f]{6}$"
+              },
+              "strokeWidth": {
+                "type": "number",
+                "minimum": 1,
+                "maximum": 30
+              },
+              "fontSize": {
+                "type": "number",
+                "minimum": 8,
+                "maximum": 200
+              },
+              "opacity": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "fill": {
+                "type": "boolean"
+              }
+            },
+            "description": "Optional style. Omitted fields use the user’s current tool style. Brand colors: coral #EC534E, papaya #FE9440."
+          }
+        },
+        "required": [
+          "from",
+          "to"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "openWorldHint": false
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "snipaya_add_shape",
+      "title": "Add shape",
+      "description": "Add a rectangle frame, ellipse, highlighter box or blur (pixelate sensitive data) over a region.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "tabId": {
+            "description": "Target tab id. Defaults to the active tab.",
+            "type": "string"
+          },
+          "relativeTo": {
+            "description": "Image id from snipaya_get_canvas. When set, all coordinates in this call are pixels of that image as captured (the same pixels you see in snipaya_render of that image).",
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "rect",
+              "ellipse",
+              "highlight",
+              "blur"
+            ]
+          },
+          "rect": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number"
+              },
+              "y": {
+                "type": "number"
+              },
+              "width": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              "height": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              }
+            },
+            "required": [
+              "x",
+              "y",
+              "width",
+              "height"
+            ],
+            "description": "A rectangle (top-left corner plus size). Canvas units, or image pixels with relativeTo."
+          },
+          "style": {
+            "type": "object",
+            "properties": {
+              "color": {
+                "type": "string",
+                "pattern": "^#[0-9a-f]{6}$"
+              },
+              "strokeWidth": {
+                "type": "number",
+                "minimum": 1,
+                "maximum": 30
+              },
+              "fontSize": {
+                "type": "number",
+                "minimum": 8,
+                "maximum": 200
+              },
+              "opacity": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "fill": {
+                "type": "boolean"
+              }
+            },
+            "description": "Optional style. Omitted fields use the user’s current tool style. Brand colors: coral #EC534E, papaya #FE9440."
+          }
+        },
+        "required": [
+          "kind",
+          "rect"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "openWorldHint": false
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "snipaya_add_text",
+      "title": "Add text",
+      "description": "Add a text label with its top-left corner at \"at\". Supports \\n for new lines.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "tabId": {
+            "description": "Target tab id. Defaults to the active tab.",
+            "type": "string"
+          },
+          "relativeTo": {
+            "description": "Image id from snipaya_get_canvas. When set, all coordinates in this call are pixels of that image as captured (the same pixels you see in snipaya_render of that image).",
+            "type": "string"
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "at": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number"
+              },
+              "y": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "x",
+              "y"
+            ],
+            "description": "A point. Canvas coordinates, or image pixels when relativeTo is set."
+          },
+          "style": {
+            "type": "object",
+            "properties": {
+              "color": {
+                "type": "string",
+                "pattern": "^#[0-9a-f]{6}$"
+              },
+              "strokeWidth": {
+                "type": "number",
+                "minimum": 1,
+                "maximum": 30
+              },
+              "fontSize": {
+                "type": "number",
+                "minimum": 8,
+                "maximum": 200
+              },
+              "opacity": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "fill": {
+                "type": "boolean"
+              }
+            },
+            "description": "Optional style. Omitted fields use the user’s current tool style. Brand colors: coral #EC534E, papaya #FE9440."
+          }
+        },
+        "required": [
+          "text",
+          "at"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "openWorldHint": false
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "snipaya_add_step",
+      "title": "Add step number",
+      "description": "Add an auto-numbered step badge (1, 2, 3...) centered at \"at\", for step-by-step guides. size is the badge diameter; make it larger on big screenshots.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "tabId": {
+            "description": "Target tab id. Defaults to the active tab.",
+            "type": "string"
+          },
+          "relativeTo": {
+            "description": "Image id from snipaya_get_canvas. When set, all coordinates in this call are pixels of that image as captured (the same pixels you see in snipaya_render of that image).",
+            "type": "string"
+          },
+          "at": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number"
+              },
+              "y": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "x",
+              "y"
+            ],
+            "description": "A point. Canvas coordinates, or image pixels when relativeTo is set."
+          },
+          "size": {
+            "type": "number",
+            "minimum": 12,
+            "maximum": 1000
+          },
+          "style": {
+            "type": "object",
+            "properties": {
+              "color": {
+                "type": "string",
+                "pattern": "^#[0-9a-f]{6}$"
+              },
+              "strokeWidth": {
+                "type": "number",
+                "minimum": 1,
+                "maximum": 30
+              },
+              "fontSize": {
+                "type": "number",
+                "minimum": 8,
+                "maximum": 200
+              },
+              "opacity": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "fill": {
+                "type": "boolean"
+              }
+            },
+            "description": "Optional style. Omitted fields use the user’s current tool style. Brand colors: coral #EC534E, papaya #FE9440."
+          }
+        },
+        "required": [
+          "at"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "openWorldHint": false
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "snipaya_add_emoji",
+      "title": "Add emoji",
+      "description": "Place an emoji sticker centered at \"at\".",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "tabId": {
+            "description": "Target tab id. Defaults to the active tab.",
+            "type": "string"
+          },
+          "relativeTo": {
+            "description": "Image id from snipaya_get_canvas. When set, all coordinates in this call are pixels of that image as captured (the same pixels you see in snipaya_render of that image).",
+            "type": "string"
+          },
+          "emoji": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 16
+          },
+          "at": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number"
+              },
+              "y": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "x",
+              "y"
+            ],
+            "description": "A point. Canvas coordinates, or image pixels when relativeTo is set."
+          },
+          "size": {
+            "type": "number",
+            "minimum": 12,
+            "maximum": 400
+          }
+        },
+        "required": [
+          "emoji",
+          "at"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "openWorldHint": false
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "snipaya_add_freehand",
+      "title": "Add freehand stroke",
+      "description": "Draw a freehand pen line, highlighter stroke or curved arrow through the given points. The path is smoothed like a hand-drawn stroke.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "tabId": {
+            "description": "Target tab id. Defaults to the active tab.",
+            "type": "string"
+          },
+          "relativeTo": {
+            "description": "Image id from snipaya_get_canvas. When set, all coordinates in this call are pixels of that image as captured (the same pixels you see in snipaya_render of that image).",
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "pen",
+              "highlight",
+              "curvedArrow"
+            ]
+          },
+          "points": {
+            "minItems": 2,
+            "maxItems": 2000,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "number"
+                },
+                "y": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "x",
+                "y"
+              ],
+              "description": "A point. Canvas coordinates, or image pixels when relativeTo is set."
+            }
+          },
+          "style": {
+            "type": "object",
+            "properties": {
+              "color": {
+                "type": "string",
+                "pattern": "^#[0-9a-f]{6}$"
+              },
+              "strokeWidth": {
+                "type": "number",
+                "minimum": 1,
+                "maximum": 30
+              },
+              "fontSize": {
+                "type": "number",
+                "minimum": 8,
+                "maximum": 200
+              },
+              "opacity": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "fill": {
+                "type": "boolean"
+              }
+            },
+            "description": "Optional style. Omitted fields use the user’s current tool style. Brand colors: coral #EC534E, papaya #FE9440."
+          }
+        },
+        "required": [
+          "kind",
+          "points"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "openWorldHint": false
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "snipaya_add_magnifier",
+      "title": "Add magnifier",
+      "description": "Add a round magnifying lens at \"lens\" that shows a zoomed view of the area around \"source\". radius defaults to about 8% of the short side of the image under the source.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "tabId": {
+            "description": "Target tab id. Defaults to the active tab.",
+            "type": "string"
+          },
+          "relativeTo": {
+            "description": "Image id from snipaya_get_canvas. When set, all coordinates in this call are pixels of that image as captured (the same pixels you see in snipaya_render of that image).",
+            "type": "string"
+          },
+          "source": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number"
+              },
+              "y": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "x",
+              "y"
+            ],
+            "description": "A point. Canvas coordinates, or image pixels when relativeTo is set."
+          },
+          "lens": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number"
+              },
+              "y": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "x",
+              "y"
+            ],
+            "description": "A point. Canvas coordinates, or image pixels when relativeTo is set."
+          },
+          "zoom": {
+            "default": 2,
+            "anyOf": [
+              {
+                "type": "number",
+                "const": 2
+              },
+              {
+                "type": "number",
+                "const": 3
+              },
+              {
+                "type": "number",
+                "const": 4
+              }
+            ]
+          },
+          "radius": {
+            "type": "number",
+            "minimum": 8,
+            "maximum": 4000
+          },
+          "style": {
+            "type": "object",
+            "properties": {
+              "color": {
+                "type": "string",
+                "pattern": "^#[0-9a-f]{6}$"
+              },
+              "strokeWidth": {
+                "type": "number",
+                "minimum": 1,
+                "maximum": 30
+              },
+              "fontSize": {
+                "type": "number",
+                "minimum": 8,
+                "maximum": 200
+              },
+              "opacity": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "fill": {
+                "type": "boolean"
+              }
+            },
+            "description": "Optional style. Omitted fields use the user’s current tool style. Brand colors: coral #EC534E, papaya #FE9440."
+          }
+        },
+        "required": [
+          "source",
+          "lens"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "openWorldHint": false
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "snipaya_add_callout",
+      "title": "Add callout",
+      "description": "Add a speech-bubble callout with text in \"rect\" and a tail pointing at \"tail\" (defaults to below the box). The box grows to fit the text.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "tabId": {
+            "description": "Target tab id. Defaults to the active tab.",
+            "type": "string"
+          },
+          "relativeTo": {
+            "description": "Image id from snipaya_get_canvas. When set, all coordinates in this call are pixels of that image as captured (the same pixels you see in snipaya_render of that image).",
+            "type": "string"
+          },
+          "rect": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number"
+              },
+              "y": {
+                "type": "number"
+              },
+              "width": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              "height": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              }
+            },
+            "required": [
+              "x",
+              "y",
+              "width",
+              "height"
+            ],
+            "description": "A rectangle (top-left corner plus size). Canvas units, or image pixels with relativeTo."
+          },
+          "tail": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number"
+              },
+              "y": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "x",
+              "y"
+            ],
+            "description": "A point. Canvas coordinates, or image pixels when relativeTo is set."
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "style": {
+            "type": "object",
+            "properties": {
+              "color": {
+                "type": "string",
+                "pattern": "^#[0-9a-f]{6}$"
+              },
+              "strokeWidth": {
+                "type": "number",
+                "minimum": 1,
+                "maximum": 30
+              },
+              "fontSize": {
+                "type": "number",
+                "minimum": 8,
+                "maximum": 200
+              },
+              "opacity": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "fill": {
+                "type": "boolean"
+              }
+            },
+            "description": "Optional style. Omitted fields use the user’s current tool style. Brand colors: coral #EC534E, papaya #FE9440."
+          }
+        },
+        "required": [
+          "rect",
+          "text"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "openWorldHint": false
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "snipaya_add_spotlight",
+      "title": "Add spotlight",
+      "description": "Dim everything except \"rect\" (form rect or ellipse) to draw attention to it. dim (0 to 1) changes the user’s spotlight darkness setting for all spotlights.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "tabId": {
+            "description": "Target tab id. Defaults to the active tab.",
+            "type": "string"
+          },
+          "relativeTo": {
+            "description": "Image id from snipaya_get_canvas. When set, all coordinates in this call are pixels of that image as captured (the same pixels you see in snipaya_render of that image).",
+            "type": "string"
+          },
+          "rect": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number"
+              },
+              "y": {
+                "type": "number"
+              },
+              "width": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              "height": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              }
+            },
+            "required": [
+              "x",
+              "y",
+              "width",
+              "height"
+            ],
+            "description": "A rectangle (top-left corner plus size). Canvas units, or image pixels with relativeTo."
+          },
+          "form": {
+            "default": "rect",
+            "type": "string",
+            "enum": [
+              "rect",
+              "ellipse"
+            ]
+          },
+          "dim": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          }
+        },
+        "required": [
+          "rect"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "openWorldHint": false
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "snipaya_add_measure",
+      "title": "Add measurement",
+      "description": "Draw a measuring line from \"from\" to \"to\" labeled with its length in image pixels. Returns the label.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "tabId": {
+            "description": "Target tab id. Defaults to the active tab.",
+            "type": "string"
+          },
+          "relativeTo": {
+            "description": "Image id from snipaya_get_canvas. When set, all coordinates in this call are pixels of that image as captured (the same pixels you see in snipaya_render of that image).",
+            "type": "string"
+          },
+          "from": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number"
+              },
+              "y": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "x",
+              "y"
+            ],
+            "description": "A point. Canvas coordinates, or image pixels when relativeTo is set."
+          },
+          "to": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number"
+              },
+              "y": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "x",
+              "y"
+            ],
+            "description": "A point. Canvas coordinates, or image pixels when relativeTo is set."
+          },
+          "style": {
+            "type": "object",
+            "properties": {
+              "color": {
+                "type": "string",
+                "pattern": "^#[0-9a-f]{6}$"
+              },
+              "strokeWidth": {
+                "type": "number",
+                "minimum": 1,
+                "maximum": 30
+              },
+              "fontSize": {
+                "type": "number",
+                "minimum": 8,
+                "maximum": 200
+              },
+              "opacity": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "fill": {
+                "type": "boolean"
+              }
+            },
+            "description": "Optional style. Omitted fields use the user’s current tool style. Brand colors: coral #EC534E, papaya #FE9440."
+          }
+        },
+        "required": [
+          "from",
+          "to"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "openWorldHint": false
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "snipaya_pick_color",
+      "title": "Pick color",
+      "description": "Read the color of the image pixel at \"at\" and return it as a #rrggbb hex. Changes nothing.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "tabId": {
+            "description": "Target tab id. Defaults to the active tab.",
+            "type": "string"
+          },
+          "relativeTo": {
+            "description": "Image id from snipaya_get_canvas. When set, all coordinates in this call are pixels of that image as captured (the same pixels you see in snipaya_render of that image).",
+            "type": "string"
+          },
+          "at": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number"
+              },
+              "y": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "x",
+              "y"
+            ],
+            "description": "A point. Canvas coordinates, or image pixels when relativeTo is set."
+          }
+        },
+        "required": [
+          "at"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "openWorldHint": false
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "snipaya_read_text",
+      "title": "Read text",
+      "description": "Recognize text (on-device OCR) in the images and return the lines in reading order with their rects. Limit it with rect and/or imageId. Rects use the relativeTo space when set.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "tabId": {
+            "description": "Target tab id. Defaults to the active tab.",
+            "type": "string"
+          },
+          "relativeTo": {
+            "description": "Image id from snipaya_get_canvas. When set, all coordinates in this call are pixels of that image as captured (the same pixels you see in snipaya_render of that image).",
+            "type": "string"
+          },
+          "rect": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number"
+              },
+              "y": {
+                "type": "number"
+              },
+              "width": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              "height": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              }
+            },
+            "required": [
+              "x",
+              "y",
+              "width",
+              "height"
+            ],
+            "description": "A rectangle (top-left corner plus size). Canvas units, or image pixels with relativeTo."
+          },
+          "imageId": {
+            "description": "Only read this image.",
+            "type": "string"
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "openWorldHint": false
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "snipaya_redact",
+      "title": "Redact sensitive data",
+      "description": "Find emails, phone numbers, IBANs, card numbers, tokens, IP addresses, passwords and faces (on-device) and blur them in one undo step. Defaults to every image and category. Returns the blur ids and counts.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "tabId": {
+            "description": "Target tab id. Defaults to the active tab.",
+            "type": "string"
+          },
+          "imageIds": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "categories": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "email",
+                "phone",
+                "iban",
+                "card",
+                "token",
+                "ip",
+                "password",
+                "face"
+              ]
+            }
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "openWorldHint": false
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "snipaya_update_items",
+      "title": "Update elements",
+      "description": "Change existing elements by id: move (x, y), resize (width, height), rotate (degrees), change text, or restyle. For steps, width or style.fontSize resizes the badge. All updates are one undo step.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "tabId": {
+            "description": "Target tab id. Defaults to the active tab.",
+            "type": "string"
+          },
+          "relativeTo": {
+            "description": "Image id from snipaya_get_canvas. When set, all coordinates in this call are pixels of that image as captured (the same pixels you see in snipaya_render of that image).",
+            "type": "string"
+          },
+          "updates": {
+            "minItems": 1,
+            "maxItems": 200,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "x": {
+                  "type": "number"
+                },
+                "y": {
+                  "type": "number"
+                },
+                "width": {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                },
+                "height": {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                },
+                "rotation": {
+                  "type": "number"
+                },
+                "text": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 2000
+                },
+                "style": {
+                  "type": "object",
+                  "properties": {
+                    "color": {
+                      "type": "string",
+                      "pattern": "^#[0-9a-f]{6}$"
+                    },
+                    "strokeWidth": {
+                      "type": "number",
+                      "minimum": 1,
+                      "maximum": 30
+                    },
+                    "fontSize": {
+                      "type": "number",
+                      "minimum": 8,
+                      "maximum": 200
+                    },
+                    "opacity": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1
+                    },
+                    "fill": {
+                      "type": "boolean"
+                    }
+                  },
+                  "description": "Optional style. Omitted fields use the user’s current tool style. Brand colors: coral #EC534E, papaya #FE9440."
+                }
+              },
+              "required": [
+                "id"
+              ]
+            }
+          }
+        },
+        "required": [
+          "updates"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "openWorldHint": false
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "snipaya_delete_items",
+      "title": "Delete elements",
+      "description": "Delete elements (images or annotations) by id. One undo step.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "tabId": {
+            "description": "Target tab id. Defaults to the active tab.",
+            "type": "string"
+          },
+          "ids": {
+            "minItems": 1,
+            "maxItems": 500,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "ids"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "openWorldHint": false
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "snipaya_select",
+      "title": "Select elements",
+      "description": "Select elements by id so the user sees which ones you mean. An empty list clears the selection.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "tabId": {
+            "description": "Target tab id. Defaults to the active tab.",
+            "type": "string"
+          },
+          "ids": {
+            "maxItems": 500,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "ids"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "openWorldHint": false
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "snipaya_arrange",
+      "title": "Arrange images",
+      "description": "Lay out all images of the tab in a row, column or grid with an optional gap.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "tabId": {
+            "description": "Target tab id. Defaults to the active tab.",
+            "type": "string"
+          },
+          "layout": {
+            "type": "string",
+            "enum": [
+              "row",
+              "column",
+              "grid"
+            ]
+          },
+          "gap": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 200
+          }
+        },
+        "required": [
+          "layout"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "openWorldHint": false
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "snipaya_set_crop",
+      "title": "Set crop",
+      "description": "Crop exports to a rectangle, or pass null to remove the crop.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "tabId": {
+            "description": "Target tab id. Defaults to the active tab.",
+            "type": "string"
+          },
+          "relativeTo": {
+            "description": "Image id from snipaya_get_canvas. When set, all coordinates in this call are pixels of that image as captured (the same pixels you see in snipaya_render of that image).",
+            "type": "string"
+          },
+          "rect": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "x": {
+                    "type": "number"
+                  },
+                  "y": {
+                    "type": "number"
+                  },
+                  "width": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                  },
+                  "height": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                  }
+                },
+                "required": [
+                  "x",
+                  "y",
+                  "width",
+                  "height"
+                ],
+                "description": "A rectangle (top-left corner plus size). Canvas units, or image pixels with relativeTo."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "rect"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "openWorldHint": false
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "snipaya_undo",
+      "title": "Undo",
+      "description": "Undo the last change on the tab (yours or the user’s).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "tabId": {
+            "description": "Target tab id. Defaults to the active tab.",
+            "type": "string"
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "openWorldHint": false
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "snipaya_redo",
+      "title": "Redo",
+      "description": "Redo the last undone change on the tab.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "tabId": {
+            "description": "Target tab id. Defaults to the active tab.",
+            "type": "string"
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "openWorldHint": false
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "snipaya_tabs",
+      "title": "Manage tabs",
+      "description": "Open a new empty tab, switch to a tab, or close a tab (closing never discards unsaved work without asking the user).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "new",
+              "switch",
+              "close"
+            ]
+          },
+          "tabId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "action"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "openWorldHint": false
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "snipaya_export",
+      "title": "Export image",
+      "description": "Export the canvas (or given ids) as PNG or JPG. With path, writes the file (absolute path, matching extension, refuses to overwrite unless overwrite is true); without path, returns the image.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "tabId": {
+            "description": "Target tab id. Defaults to the active tab.",
+            "type": "string"
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "png",
+              "jpeg"
+            ]
+          },
+          "ids": {
+            "description": "Export only these elements. Defaults to the whole canvas (or crop).",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "beautify": {
+            "description": "Frame the image on a background. true uses the user’s beautify settings, an object overrides some of them, false turns it off. Omit to follow the user’s setting.",
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "background": {
+                    "type": "string",
+                    "enum": [
+                      "sunset",
+                      "ocean",
+                      "mint",
+                      "mono",
+                      "solid",
+                      "transparent"
+                    ]
+                  },
+                  "solidColor": {
+                    "type": "string",
+                    "pattern": "^#[0-9a-f]{6}$"
+                  },
+                  "padding": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 400
+                  },
+                  "radius": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 100
+                  },
+                  "shadow": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            ]
+          },
+          "path": {
+            "description": "Absolute file path to write. Omit to receive the image in the response.",
+            "type": "string"
+          },
+          "overwrite": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "format"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "openWorldHint": false
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "snipaya_list_destinations",
+      "title": "List export destinations",
+      "description": "List the export destinations the user set up (share menu, open with an app, quick save folder, uploaders, Jira, Confluence) with their ids for snipaya_export_to.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "openWorldHint": false
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "snipaya_export_to",
+      "title": "Export to destination",
+      "description": "Render the canvas (or given ids) as PNG and send it to a destination from snipaya_list_destinations. Uploads to network destinations always ask the user to confirm first. Returns the link or file path.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "tabId": {
+            "description": "Target tab id. Defaults to the active tab.",
+            "type": "string"
+          },
+          "destination": {
+            "type": "string",
+            "minLength": 1
+          },
+          "ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "beautify": {
+            "description": "Frame the image on a background. true uses the user’s beautify settings, an object overrides some of them, false turns it off. Omit to follow the user’s setting.",
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "background": {
+                    "type": "string",
+                    "enum": [
+                      "sunset",
+                      "ocean",
+                      "mint",
+                      "mono",
+                      "solid",
+                      "transparent"
+                    ]
+                  },
+                  "solidColor": {
+                    "type": "string",
+                    "pattern": "^#[0-9a-f]{6}$"
+                  },
+                  "padding": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 400
+                  },
+                  "radius": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 100
+                  },
+                  "shadow": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "required": [
+          "destination"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "openWorldHint": true
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "snipaya_save_project",
+      "title": "Save project",
+      "description": "Save the tab as a .snipaya project. Without path, saves to the tab’s existing file; a tab that was never saved needs an absolute path.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "tabId": {
+            "description": "Target tab id. Defaults to the active tab.",
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "overwrite": {
+            "type": "boolean"
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "openWorldHint": false
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    }
+  ],
+  "prompts": [
+    {
+      "name": "explain_bug",
+      "title": "Explain a bug in a screenshot",
+      "description": "Mark up a screenshot with steps, an arrow and a callout so the bug is obvious.",
+      "arguments": [
+        {
+          "name": "issue",
+          "description": "What is wrong and where, for example: the Save button is cut off.",
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "redact_before_sharing",
+      "title": "Redact secrets before sharing",
+      "description": "Blur emails, phone numbers, tokens, passwords, faces and other private details.",
+      "arguments": [
+        {
+          "name": "also_hide",
+          "description": "Anything else to hide, for example customer names or an internal link.",
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "finish_screenshot",
+      "title": "Make a screenshot look finished",
+      "description": "Crop to what matters and frame the image on a background with padding.",
+      "arguments": [
+        {
+          "name": "background",
+          "description": "Background to use, for example ocean, mint, mono, a solid color or transparent.",
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "copy_text",
+      "title": "Copy text out of an image",
+      "description": "Read the text in a screenshot on device and return it as plain text.",
+      "arguments": [
+        {
+          "name": "area",
+          "description": "Which part to read, for example the error dialog. Leave empty to read all.",
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "make_walkthrough",
+      "title": "Turn screenshots into a walkthrough",
+      "description": "Lay out several screenshots in order and number the steps into one guide image.",
+      "arguments": [
+        {
+          "name": "topic",
+          "description": "What the walkthrough shows, for example how to invite a teammate.",
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "compare_before_after",
+      "title": "Compare before and after",
+      "description": "Put two screenshots side by side in one tab, label them and mark what changed.",
+      "arguments": [
+        {
+          "name": "change",
+          "description": "What changed between the two, for example: the Save button moved up.",
+          "required": false
+        }
+      ]
+    }
+  ]
+}

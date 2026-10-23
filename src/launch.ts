@@ -61,7 +61,7 @@ export const ensureSnipaya = async (config: RunConfig, deps: LaunchDeps): Promis
   }
   if (!(await deps.licenseAccepted())) {
     throw new UnavailableError(
-      `Opened Snipaya, but its MCP server starts only after you accept the license agreement. Accept it in Snipaya, then restart the snipaya server in your MCP client. If Snipaya shows no agreement, check the status in ${SETTINGS}.`
+      `Opened Snipaya, but its MCP server starts only after you accept the license agreement. Accept it in Snipaya, then call the tool again. If Snipaya shows no agreement, check the status in ${SETTINGS}.`
     )
   }
   throw new UnavailableError(

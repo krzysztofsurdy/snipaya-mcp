@@ -236,7 +236,7 @@ describe('errors', () => {
   it('asks to accept the license agreement when the saved server does not answer', async () => {
     saveSettings({ enabled: true, token: TOKEN, port: await unusedPort() })
     const pending =
-      /Cannot reach Snipaya at http:\/\/127\.0\.0\.1:\d+\/mcp\. Its MCP server starts only after you accept the license agreement: open Snipaya, accept it, then restart the snipaya server in your MCP client\. If Snipaya shows no agreement, turn on the MCP server in Snipaya > Settings > AI Assistants\./
+      /Cannot reach Snipaya at http:\/\/127\.0\.0\.1:\d+\/mcp\. Its MCP server starts only after you accept the license agreement: open Snipaya and accept it, then call the tool again\. If Snipaya shows no agreement, turn on the MCP server in Snipaya > Settings > AI Assistants\./
     const client = await connectBridged({ PATH: home })
     expect(textOf(await client.callTool({ name: 'snipaya_render', arguments: {} }))).toMatch(pending)
     expect(stderr).toMatch(pending)

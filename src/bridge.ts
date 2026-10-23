@@ -56,7 +56,7 @@ const messageOf = (error: unknown): string => (error instanceof Error ? error.me
 
 export const unreachableMessage = (url: URL, licensePending: boolean): string =>
   licensePending
-    ? `Cannot reach Snipaya at ${url}. Its MCP server starts only after you accept the license agreement: open Snipaya, accept it, then restart the snipaya server in your MCP client. If Snipaya shows no agreement, turn on the MCP server in ${SETTINGS}.`
+    ? `Cannot reach Snipaya at ${url}. Its MCP server starts only after you accept the license agreement: open Snipaya and accept it, then call the tool again. If Snipaya shows no agreement, turn on the MCP server in ${SETTINGS}.`
     : `Cannot reach Snipaya at ${url}. Is Snipaya open? Turn on the MCP server in ${SETTINGS} and check the URL there.`
 
 export const describeError = (error: unknown, url: URL, licensePending = false): string => {

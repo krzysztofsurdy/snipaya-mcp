@@ -100,7 +100,7 @@ describe('ensureSnipaya', () => {
     const outcome = ensureSnipaya(config(47321), deps)
     await expect(outcome).rejects.toThrow(ConfigError)
     await expect(outcome).rejects.toThrow(
-      'Opened Snipaya, but its MCP server starts only after you accept the license agreement. Accept it in Snipaya, then restart the snipaya server in your MCP client. If Snipaya shows no agreement, check the status in Snipaya > Settings > AI Assistants.'
+      'Opened Snipaya, but its MCP server starts only after you accept the license agreement. Accept it in Snipaya, then call the tool again. If Snipaya shows no agreement, check the status in Snipaya > Settings > AI Assistants.'
     )
     expect(deps.launch).toHaveBeenCalledTimes(1)
   })

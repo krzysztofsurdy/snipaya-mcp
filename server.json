@@ -8,13 +8,13 @@
     "url": "https://github.com/krzysztofsurdy/snipaya-mcp",
     "source": "github"
   },
-  "version": "1.2.0",
+  "version": "1.2.1",
   "packages": [
     {
       "registryType": "npm",
       "registryBaseUrl": "https://registry.npmjs.org",
       "identifier": "snipaya-mcp",
-      "version": "1.2.0",
+      "version": "1.2.1",
       "runtimeHint": "npx",
       "transport": {
         "type": "stdio"

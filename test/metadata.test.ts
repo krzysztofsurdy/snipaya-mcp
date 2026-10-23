@@ -6,6 +6,7 @@ interface PackageJson {
   version: string
   mcpName: string
   bin: Record<string, string>
+  files: string[]
 }
 
 interface ServerJson {
@@ -65,6 +66,10 @@ describe('directory metadata', () => {
 
   it('lists the switch that stops the bridge from opening Snipaya', () => {
     expect(variable('SNIPAYA_MCP_NO_LAUNCH')).toMatchObject({ isRequired: false, isSecret: false })
+  })
+
+  it('ships the catalog next to the built entry point', () => {
+    expect(pkg.files).toContain('catalog.json')
   })
 
   it('points the bundle at the built entry point', () => {

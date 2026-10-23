@@ -9,6 +9,7 @@
   },
   "files": [
     "dist",
+    "catalog.json",
     "server.json"
   ],
   "engines": {

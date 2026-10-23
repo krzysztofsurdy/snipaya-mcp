@@ -14,6 +14,8 @@ Connect any MCP client that speaks stdio to [Snipaya](https://snipaya.app), the 
 
 Snipaya has an MCP server built in, served over Streamable HTTP on `127.0.0.1`. `snipaya-mcp` is a thin bridge for clients that only start local stdio servers: it forwards every MCP message between the client and Snipaya, unchanged.
 
+Tools and prompts are listed even before Snipaya is open. Until Snipaya answers, the bridge lists them from a built-in catalog, and a tool call returns a message that says what to do.
+
 <!-- Demo GIF: replace with docs/demo.gif once recorded -->
 <!-- ![snipaya-mcp demo](docs/demo.gif) -->
 
@@ -47,7 +49,7 @@ To override what Snipaya saved, set these variables or flags. Flags win over var
 | --- | --- | --- | --- |
 | `SNIPAYA_MCP_TOKEN` | `--token` | Token Snipaya saved | Access token from **Settings > AI Assistants**. |
 | `SNIPAYA_MCP_URL` | `--url` | `http://127.0.0.1:<saved port>/mcp`, else `http://127.0.0.1:47321/mcp` | Server URL from Snipaya. Only `127.0.0.1` and `localhost` are accepted. |
-| `SNIPAYA_MCP_NO_LAUNCH` | | | Set to `1` to never open Snipaya. The bridge then fails with `Cannot reach Snipaya` while Snipaya is closed. |
+| `SNIPAYA_MCP_NO_LAUNCH` | | | Set to `1` to never open Snipaya. While Snipaya is closed, tool calls then return `Cannot reach Snipaya`. |
 
 Prefer the environment variable over `--token`: command-line flags are visible to other processes on the Mac.
 
@@ -101,12 +103,12 @@ If your client supports Streamable HTTP servers directly, you do not need this b
 - **Off by default.** Nothing listens until you turn on **Allow AI assistants**.
 - **Token.** Every request carries `Authorization: Bearer <token>`. Snipaya generates the token, and **Regenerate** in Settings revokes the old one. The bridge never writes the token to its logs.
 - **Saved settings.** Without `SNIPAYA_MCP_TOKEN`, the bridge reads the token and port from `~/Library/Application Support/Snipaya/mcp.json`, which Snipaya writes readable only by your macOS user. The bridge never writes to it.
-- **Opening Snipaya.** Only on macOS and only when **Allow AI assistants** is on, the bridge first sends one request without the token to see whether Snipaya answers. If the connection is refused, it runs `open -g -b dev.snipaya.app` (no shell) and retries. Any other failure, such as a rejected token, never opens the app. `SNIPAYA_MCP_NO_LAUNCH=1` turns this off.
-- **The bridge only forwards.** It adds no tools, stores nothing, and connects only to Snipaya. All actions run inside Snipaya, which shows connected assistants and recent activity in **Settings > AI Assistants**.
+- **Opening Snipaya.** Only on macOS and only when **Allow AI assistants** is on, the bridge first sends one request without the token to see whether Snipaya answers. If the connection is refused, it runs `open -g -b dev.snipaya.app` (no shell) and retries. It does this at start, and again for a tool call while Snipaya is not reachable. Any other failure, such as a rejected token, never opens the app. `SNIPAYA_MCP_NO_LAUNCH=1` turns this off.
+- **The bridge only forwards.** It runs no tools itself, stores nothing, and connects only to Snipaya. While Snipaya is not reachable, it answers the tool and prompt lists from a catalog shipped in the package. All actions run inside Snipaya, which shows connected assistants and recent activity in **Settings > AI Assistants**.
 
 ## Tools
 
-The tools come from the Snipaya version you have installed. Snipaya 1.0 provides:
+The tools come from the Snipaya version you have installed. Until Snipaya answers, the bridge lists the tools of Snipaya 1.3.3 from its catalog, and once Snipaya answers, the list of your installed version applies. Snipaya 1.3 provides:
 
 | Tool | Title |
 | --- | --- |
@@ -139,17 +141,29 @@ The tools come from the Snipaya version you have installed. Snipaya 1.0 provides
 | `snipaya_export_to` | Export to destination |
 | `snipaya_save_project` | Save project |
 
+## Prompts
+
+| Prompt | Title | Optional argument |
+| --- | --- | --- |
+| `explain_bug` | Explain a bug in a screenshot | `issue` |
+| `redact_before_sharing` | Redact secrets before sharing | `also_hide` |
+| `finish_screenshot` | Make a screenshot look finished | `background` |
+| `copy_text` | Copy text out of an image | `area` |
+| `make_walkthrough` | Turn screenshots into a walkthrough | `topic` |
+| `compare_before_after` | Compare before and after | `change` |
+
 ## Troubleshooting
 
-The bridge writes one line to stderr (never stdout, which carries the protocol) and returns the same text as an MCP error to your client.
+The bridge writes the problem to stderr (never stdout, which carries the protocol). While Snipaya is not reachable, it still lists the tools, and returns the same text as the result of each tool call. When Snipaya starts answering, for example after you open it or accept the license agreement, the next tool call reaches it without a restart.
 
 | Message | Fix |
 | --- | --- |
 | `Snipaya's settings were not found` | Install Snipaya, open it once and turn on **Allow AI assistants**. Or set `SNIPAYA_MCP_TOKEN`. |
+| `Snipaya is a macOS app` | The bridge runs on another system. It lists the tools, but they work only with Snipaya on a Mac. |
 | `Snipaya's MCP server is off` | Turn on **Allow AI assistants** in **Settings > AI Assistants**. |
 | `Snipaya's settings ... cannot be read` or `hold no valid token` | Open Snipaya, which rewrites its settings, then check **Allow AI assistants**. Or set `SNIPAYA_MCP_TOKEN`. |
 | `Cannot open Snipaya` | Snipaya is not installed in a place macOS can find. Install it from [snipaya.app](https://snipaya.app) or open it yourself. |
-| `Opened Snipaya, but its MCP server starts only after you accept the license agreement` | Snipaya 1.1 and newer start the MCP server only after you accept the license agreement. Accept it in the Snipaya window, then restart the snipaya server in your client. |
+| `Opened Snipaya, but its MCP server starts only after you accept the license agreement` | Snipaya 1.1 and newer start the MCP server only after you accept the license agreement. Accept it in the Snipaya window, then call the tool again. |
 | `Opened Snipaya, but its MCP server did not answer` | Open **Settings > AI Assistants** and fix the error shown under the status. |
 | `Cannot reach Snipaya at ...` | Open Snipaya and turn on **Allow AI assistants**. If the message mentions the license agreement, accept it in Snipaya first. If the status shows an error, fix that first. Check that the URL matches **Server URL**. |
 | `Snipaya rejected the token` | The token changed, for example after **Regenerate**. Remove `SNIPAYA_MCP_TOKEN` to use the saved token, or copy the current one. |
@@ -166,7 +180,17 @@ npm ci
 npm run lint
 npm run typecheck
 npm test          # builds, then runs the bridge over stdio against a local test server
-npm run pack:mcpb # builds snipaya-mcp-<version>.mcpb with the official mcpb CLI
+npm run pack:mcpb # builds snipaya-mcp-<version>.mcpb with the official mcpb CLI, and snipaya-mcp-<version>-smithery.mcpb
+```
+
+`npm run pack:mcpb` also writes `snipaya-mcp-<version>-smithery.mcpb` for Smithery. It is the same bundle with each tool's `inputSchema` in `manifest.json`, which Smithery requires and the MCPB manifest schema does not allow.
+
+### Catalog
+
+`catalog.json` holds the tools, prompts and instructions the bridge serves while Snipaya is not reachable, and `manifest.json` lists the same tools and prompts. Regenerate both from a checkout of the Snipaya app (default `../snipaya`) with Node 22.6 or newer, and commit the result:
+
+```sh
+npm run sync:catalog -- ../snipaya
 ```
 
 Without a token or URL, the bridge reads the settings of the installed Snipaya in `~/Library/Application Support/Snipaya`. Development builds of Snipaya keep their settings in their own `Snipaya Dev` profile folder, so to bridge to one, set `SNIPAYA_MCP_TOKEN` and `SNIPAYA_MCP_URL` to the values shown in its **Settings > AI Assistants**.
@@ -197,6 +221,8 @@ git push --follow-tags
 ```
 
 When the workflow reaches **Publish to npm**, approve the staged version with a 2FA prompt: `npm stage approve snipaya-mcp@<version>`, or on the package page on npmjs.com. The rest of the release continues on its own.
+
+The workflow attaches only the official bundle. For Smithery, run `npm run pack:mcpb` at the tag and upload `snipaya-mcp-<version>-smithery.mcpb` yourself.
 
 Re-running a failed release is safe: it skips the npm and MCP Registry publish when that version is already there, and replaces the bundle on an existing GitHub release.
 

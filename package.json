@@ -1,6 +1,6 @@
 {
   "name": "snipaya-mcp",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "Stdio bridge to the local MCP server of Snipaya, the macOS image annotator",
   "mcpName": "io.github.krzysztofsurdy/snipaya-mcp",
   "type": "module",

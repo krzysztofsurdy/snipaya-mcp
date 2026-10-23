@@ -50,7 +50,7 @@
     },
     {
       "name": "snipaya_add_shape",
-      "description": "Add a rectangle frame, ellipse, highlighter box or blur (pixelate sensitive data) over a region. For blur, pixelSize sets the block size; larger is coarser."
+      "description": "Add a rectangle frame, ellipse, highlighter box, blur (pixelate) or noise (opaque random colors from the area, the safest way to hide sensitive data) over a region. For blur and noise, pixelSize sets the block size; larger is coarser."
     },
     {
       "name": "snipaya_add_text",
@@ -94,7 +94,7 @@
     },
     {
       "name": "snipaya_redact",
-      "description": "Find emails, phone numbers, IBANs, card numbers, tokens, IP addresses, passwords and faces (on-device) and blur them in one undo step. By default the blocks are sized to the text so secrets can’t be read back; pixelSize sets a coarser minimum. Defaults to every image and category. Returns the blur ids and counts."
+      "description": "Find emails, phone numbers, IBANs, card numbers, tokens, IP addresses, passwords and faces (on-device) and cover them in one undo step, in the user’s Redaction style (noise by default). style overrides it: noise fills the area with opaque random colors from it, blur pixelates with blocks sized to the text, solid covers it with a plain box. pixelSize sets the noise block size or a coarser minimum for blur. Defaults to every image and category. Returns the ids and counts."
     },
     {
       "name": "snipaya_update_items",
@@ -190,11 +190,11 @@
     },
     {
       "name": "redact_before_sharing",
-      "description": "Blur emails, phone numbers, tokens, passwords, faces and other private details.",
+      "description": "Hide emails, phone numbers, tokens, passwords, faces and other private details.",
       "arguments": [
         "also_hide"
       ],
-      "text": "Hide private data in the images on the Snipaya canvas before the user shares them.\n\n1. Call snipaya_get_canvas to see the open tabs and images. If there is no image, tell the user there is nothing to redact and stop.\n2. Call snipaya_redact once without arguments. It finds and blurs emails, phone numbers, IBANs, card numbers, tokens, IP addresses, passwords and faces in every image, on device.\n3. Call snipaya_render and look for private details it missed, such as names, account numbers, addresses, internal links or private messages. Use snipaya_read_text to get the exact position of text.\n4. Cover each missed item with snipaya_add_shape (kind blur), passing relativeTo with the image id, a rect slightly larger than the item and a pixelSize at least the height of its text.\n5. Call snipaya_render again and check that every item is fully covered.\n6. Tell the user what was blurred and ask them to check the result before sharing. Do not export or share unless they ask."
+      "text": "Hide private data in the images on the Snipaya canvas before the user shares them.\n\n1. Call snipaya_get_canvas to see the open tabs and images. If there is no image, tell the user there is nothing to redact and stop.\n2. Call snipaya_redact once without arguments. It finds and covers emails, phone numbers, IBANs, card numbers, tokens, IP addresses, passwords and faces in every image, on device.\n3. Call snipaya_render and look for private details it missed, such as names, account numbers, addresses, internal links or private messages. Use snipaya_read_text to get the exact position of text.\n4. Cover each missed item with snipaya_add_shape (kind noise), passing relativeTo with the image id and a rect slightly larger than the item.\n5. Call snipaya_render again and check that every item is fully covered.\n6. Tell the user what was covered and ask them to check the result before sharing. Do not export or share unless they ask."
     },
     {
       "name": "finish_screenshot",

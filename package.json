@@ -21,6 +21,7 @@
     "pretest": "npm run build",
     "test": "vitest run",
     "pack:mcpb": "npm run build && node scripts/pack-mcpb.mjs",
+    "sync:catalog": "node --experimental-strip-types --no-warnings scripts/sync-catalog.mjs",
     "prepack": "npm run build",
     "version": "node scripts/sync-version.mjs"
   },

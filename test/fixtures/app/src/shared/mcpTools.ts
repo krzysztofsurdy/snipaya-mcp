@@ -1,10 +1,11 @@
 import { z } from 'zod'
+import { TAB_HINT } from './hint'
 
 export const MCP_TOOLS = {
   snipaya_look: {
     title: 'Look',
     description: 'Look at the canvas.',
-    input: z.object({ tabId: z.string().optional().describe('Target tab id.') }),
+    input: z.object({ tabId: z.string().optional().describe(TAB_HINT) }),
     readOnly: true
   },
   snipaya_wipe: {

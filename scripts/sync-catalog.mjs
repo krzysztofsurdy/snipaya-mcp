@@ -1,4 +1,5 @@
 import { readFileSync, writeFileSync } from 'node:fs'
+import { register } from 'node:module'
 import { join, resolve } from 'node:path'
 import { argv, exit, stderr } from 'node:process'
 import { pathToFileURL } from 'node:url'
@@ -6,6 +7,20 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { readJson } from './metadata.mjs'
+
+const resolveTypeScriptImports = `
+export const resolve = async (specifier, context, next) => {
+  try {
+    return await next(specifier, context)
+  } catch (error) {
+    const relative = specifier.startsWith('./') || specifier.startsWith('../')
+    if (error?.code !== 'ERR_MODULE_NOT_FOUND' || !relative || /\\.[cm]?[jt]s$/.test(specifier)) throw error
+    return next(\`\${specifier}.ts\`, context)
+  }
+}
+`
+
+register(`data:text/javascript,${encodeURIComponent(resolveTypeScriptImports)}`)
 
 const writeJson = (file, value) => writeFileSync(file, `${JSON.stringify(value, null, 2)}\n`)
 

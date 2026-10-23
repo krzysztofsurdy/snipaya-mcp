@@ -7,7 +7,9 @@
 <p align="center">
   <a href="https://github.com/krzysztofsurdy/snipaya-mcp/actions/workflows/ci.yml"><img src="https://github.com/krzysztofsurdy/snipaya-mcp/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI"></a>
   <a href="https://www.npmjs.com/package/snipaya-mcp"><img src="https://img.shields.io/npm/v/snipaya-mcp" alt="npm version"></a>
+  <a href="https://www.npmjs.com/package/snipaya-mcp"><img src="https://img.shields.io/npm/dm/snipaya-mcp" alt="npm downloads"></a>
   <a href="https://github.com/krzysztofsurdy/snipaya-mcp/blob/main/LICENSE"><img src="https://img.shields.io/github/license/krzysztofsurdy/snipaya-mcp" alt="MIT license"></a>
+  <a href="https://glama.ai/mcp/servers/krzysztofsurdy/snipaya-mcp"><img src="https://glama.ai/mcp/servers/krzysztofsurdy/snipaya-mcp/badges/score.svg" alt="snipaya-mcp on Glama"></a>
 </p>
 
 Connect any MCP client that speaks stdio to [Snipaya](https://snipaya.app), the image and screenshot annotator for macOS. Your assistant can read the canvas, add arrows, text, shapes and callouts, redact sensitive data, crop, and export, while you watch the result in Snipaya.
@@ -16,8 +18,11 @@ Snipaya has an MCP server built in, served over Streamable HTTP on `127.0.0.1`. 
 
 Tools and prompts are listed even before Snipaya is open. Until Snipaya answers, the bridge lists them from a built-in catalog, and a tool call returns a message that says what to do.
 
-<!-- Demo GIF: replace with docs/demo.gif once recorded -->
-<!-- ![snipaya-mcp demo](docs/demo.gif) -->
+<p align="center">
+  <img src="https://raw.githubusercontent.com/krzysztofsurdy/snipaya-mcp/main/docs/demo.gif" width="720" alt="An assistant documenting a ticket in Snipaya: four screenshots on one canvas with numbered steps, arrows and callouts">
+</p>
+
+Listed on the [MCP Registry](https://registry.modelcontextprotocol.io/) as `io.github.krzysztofsurdy/snipaya-mcp`, on [Glama](https://glama.ai/mcp/servers/krzysztofsurdy/snipaya-mcp) and in [TensorBlock awesome-mcp-servers](https://github.com/TensorBlock/awesome-mcp-servers).
 
 ## Requirements
 

@@ -13,11 +13,13 @@ import {
   ToolListChangedNotificationSchema
 } from '@modelcontextprotocol/sdk/types.js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { startBridge } from '../src/bridge.js'
+import { startBridge, type Bridge, type BridgeOptions } from '../src/bridge.js'
+import { loadCatalog, packageVersion } from '../src/catalog.js'
 import { startTestServer, unusedPort, type TestServer } from './fixtures/server.js'
 
 const BIN = fileURLToPath(new URL('../dist/index.js', import.meta.url))
 const TOKEN = 'a'.repeat(64)
+const catalog = loadCatalog()
 
 let server: TestServer
 let stderr: string
@@ -51,6 +53,9 @@ const saveUserData = (file: string, content: Record<string, unknown>): void => {
 const saveSettings = (settings: Record<string, unknown>): void => saveUserData('mcp.json', settings)
 
 const serverPort = (): number => Number(new URL(server.url).port)
+
+const textOf = (result: unknown): string =>
+  ((result as { content?: { text?: string }[] }).content ?? []).map((item) => item.text ?? '').join('\n')
 
 const connectBridged = async (env?: Record<string, string>, args: string[] = []): Promise<Client> => {
   const transport = new StdioClientTransport({
@@ -213,11 +218,15 @@ describe('errors', () => {
     expect(stderr).not.toContain(wrong)
   })
 
-  it('explains that Snipaya is not reachable', async () => {
+  it('lists the catalog and explains tool calls when Snipaya is not reachable', async () => {
     const url = `http://127.0.0.1:${await unusedPort()}/mcp`
-    await expect(
-      connectBridged({ SNIPAYA_MCP_URL: url, SNIPAYA_MCP_TOKEN: TOKEN })
-    ).rejects.toThrow(/Turn on the MCP server in Snipaya > Settings > AI Assistants/)
+    const client = await connectBridged({ SNIPAYA_MCP_URL: url, SNIPAYA_MCP_TOKEN: TOKEN })
+    expect((await client.listTools()).tools).toEqual(catalog.tools)
+    const result = await client.callTool({ name: 'snipaya_get_canvas', arguments: {} })
+    expect(result.isError).toBe(true)
+    expect(textOf(result)).toMatch(
+      /^Cannot reach Snipaya at .*\. Is Snipaya open\? Turn on the MCP server in Snipaya > Settings > AI Assistants/
+    )
     expect(stderr).toMatch(/Cannot reach Snipaya/)
     expect(stderr).not.toMatch(/license agreement/)
     expect(stderr).not.toMatch(/\n\s+at /)
@@ -228,7 +237,8 @@ describe('errors', () => {
     saveSettings({ enabled: true, token: TOKEN, port: await unusedPort() })
     const pending =
       /Cannot reach Snipaya at http:\/\/127\.0\.0\.1:\d+\/mcp\. Its MCP server starts only after you accept the license agreement: open Snipaya, accept it, then restart the snipaya server in your MCP client\. If Snipaya shows no agreement, turn on the MCP server in Snipaya > Settings > AI Assistants\./
-    await expect(connectBridged({ PATH: home })).rejects.toThrow(pending)
+    const client = await connectBridged({ PATH: home })
+    expect(textOf(await client.callTool({ name: 'snipaya_render', arguments: {} }))).toMatch(pending)
     expect(stderr).toMatch(pending)
     expect(stderr).not.toMatch(/Is Snipaya open\?/)
     expect(stderr).not.toContain(TOKEN)
@@ -237,7 +247,8 @@ describe('errors', () => {
   it('keeps the usual message when the license agreement was accepted', async () => {
     saveSettings({ enabled: true, token: TOKEN, port: await unusedPort() })
     saveUserData('eula.json', { version: '1.0', acceptedAt: 1_760_000_000_000 })
-    await expect(connectBridged({ PATH: home })).rejects.toThrow(
+    const client = await connectBridged({ PATH: home })
+    expect(textOf(await client.callTool({ name: 'snipaya_render', arguments: {} }))).toMatch(
       /Cannot reach Snipaya at .*\. Is Snipaya open\? Turn on the MCP server/
     )
     expect(stderr).not.toMatch(/license agreement/)
@@ -247,19 +258,18 @@ describe('errors', () => {
     'tries to open Snipaya when its saved server is on but not running',
     async () => {
       saveSettings({ enabled: true, token: TOKEN, port: await unusedPort() })
-      const result = run([], { SNIPAYA_MCP_NO_LAUNCH: '', PATH: home })
-      expect(result.status).toBe(1)
-      expect(result.stderr).toMatch(/Snipaya is not running\. Opening it in the background\./)
-      expect(result.stderr).toMatch(/Cannot open Snipaya \(dev\.snipaya\.app\)/)
-      expect(result.stderr).not.toContain(TOKEN)
+      const client = await connectBridged({ SNIPAYA_MCP_NO_LAUNCH: '', PATH: home })
+      const result = await client.callTool({ name: 'snipaya_render', arguments: {} })
+      expect(textOf(result)).toMatch(/Cannot open Snipaya \(dev\.snipaya\.app\)\. Install it from https:\/\/snipaya\.app/)
+      expect(stderr).toMatch(/Snipaya is not running\. Opening it in the background\./)
+      expect(stderr).not.toContain(TOKEN)
     }
   )
 
   it('does not open Snipaya with SNIPAYA_MCP_NO_LAUNCH=1', async () => {
     saveSettings({ enabled: true, token: TOKEN, port: await unusedPort() })
-    await expect(connectBridged({ SNIPAYA_MCP_NO_LAUNCH: '1', PATH: home })).rejects.toThrow(
-      /Cannot reach Snipaya/
-    )
+    const client = await connectBridged({ SNIPAYA_MCP_NO_LAUNCH: '1', PATH: home })
+    expect(textOf(await client.callTool({ name: 'snipaya_render', arguments: {} }))).toMatch(/Cannot reach Snipaya/)
     expect(stderr).not.toMatch(/Opening it/)
   })
 
@@ -273,67 +283,226 @@ describe('errors', () => {
     }
   })
 
-  it('explains that Snipaya was never set up when no token is set', () => {
-    const result = run([], {})
-    expect(result.status).toBe(1)
-    expect(result.stderr.trim().split('\n')).toHaveLength(1)
-    expect(result.stderr).toMatch(/settings were not found.*Allow AI assistants.*SNIPAYA_MCP_TOKEN/)
+  it('explains that Snipaya was never set up when no token is set', async () => {
+    const client = await connectBridged({})
+    expect((await client.listTools()).tools).toHaveLength(28)
+    const text = textOf(await client.callTool({ name: 'snipaya_render', arguments: {} }))
+    if (process.platform === 'darwin') {
+      expect(text).toMatch(/settings were not found.*Allow AI assistants.*SNIPAYA_MCP_TOKEN/)
+    } else {
+      expect(text).toBe(
+        'Snipaya is a macOS app. Install it on a Mac from https://snipaya.app, open it and turn on Allow AI assistants in Snipaya > Settings > AI Assistants.'
+      )
+    }
+    expect(stderr).toContain(text)
   })
 
-  it('asks to turn the server on when Snipaya saved it as off', () => {
+  it('asks to turn the server on when Snipaya saved it as off', async () => {
     saveSettings({ enabled: false, token: TOKEN, port: serverPort() })
-    const result = run([], {})
-    expect(result.status).toBe(1)
-    expect(result.stderr.trim().split('\n')).toHaveLength(1)
-    expect(result.stderr).toMatch(/MCP server is off\. Turn on Allow AI assistants/)
-    expect(result.stderr).not.toContain(TOKEN)
+    const client = await connectBridged({})
+    const text = textOf(await client.callTool({ name: 'snipaya_render', arguments: {} }))
+    expect(text).toMatch(process.platform === 'darwin' ? /MCP server is off\. Turn on Allow AI assistants/ : /macOS app/)
+    expect(stderr).not.toContain(TOKEN)
+  })
+})
+
+describe('the binary without Snipaya', () => {
+  it('serves the catalog prompts and instructions', async () => {
+    const client = await connectBridged({})
+    expect((await client.listPrompts()).prompts).toEqual(catalog.prompts)
+    expect(client.getInstructions()).toBe(catalog.instructions)
+    expect(client.getServerVersion()).toMatchObject({ name: 'snipaya', version: packageVersion() })
+  })
+
+  it('forwards once Snipaya is turned on', async () => {
+    const client = await connectBridged({})
+    expect((await client.callTool({ name: 'snipaya_render', arguments: {} })).isError).toBe(true)
+    saveSettings({ enabled: true, token: TOKEN, port: serverPort() })
+    const result = await client.callTool({ name: 'echo', arguments: { text: 'there you are' } })
+    expect(result).toEqual({ content: [{ type: 'text', text: 'there you are' }] })
+    expect(stderr).not.toContain(TOKEN)
+  })
+})
+
+const INITIALIZE_PARAMS = {
+  protocolVersion: '2025-06-18',
+  capabilities: { roots: { listChanged: true } },
+  clientInfo: { name: 'offline-test', version: '1.0.0' }
+}
+
+type Reply = { id?: number; method?: string; result?: Record<string, unknown>; error?: { code: number; message: string } }
+
+const bridges: Bridge[] = []
+
+afterEach(async () => {
+  await Promise.all(bridges.splice(0).map((bridge) => bridge.close()))
+})
+
+const session = async (options: Partial<BridgeOptions>) => {
+  const stdin = new PassThrough()
+  const stdout = new PassThrough()
+  const messages: Reply[] = []
+  let buffered = ''
+  stdout.on('data', (chunk: Buffer) => {
+    buffered += chunk.toString('utf8')
+    const lines = buffered.split('\n')
+    buffered = lines.pop() ?? ''
+    for (const line of lines) if (line.trim() !== '') messages.push(JSON.parse(line) as Reply)
+  })
+  const bridge = await startBridge({
+    connection: 'Snipaya is not set up.',
+    catalog,
+    version: '9.9.9',
+    stdin,
+    stdout,
+    log: () => undefined,
+    ...options
+  })
+  bridges.push(bridge)
+  let nextId = 0
+  const request = async (method: string, params?: Record<string, unknown>): Promise<Reply> => {
+    nextId += 1
+    const id = nextId
+    stdin.write(`${JSON.stringify({ jsonrpc: '2.0', id, method, ...(params ? { params } : {}) })}\n`)
+    await until(() => messages.some((message) => message.id === id && message.method === undefined))
+    return messages.find((message) => message.id === id && message.method === undefined) as Reply
+  }
+  const notify = (method: string): void => {
+    stdin.write(`${JSON.stringify({ jsonrpc: '2.0', method })}\n`)
+  }
+  const start = async (): Promise<Reply> => {
+    const reply = await request('initialize', INITIALIZE_PARAMS)
+    notify('notifications/initialized')
+    return reply
+  }
+  return { request, start, messages }
+}
+
+const callText = (reply: Reply): string =>
+  ((reply.result?.content as { text: string }[] | undefined) ?? []).map((item) => item.text).join('\n')
+
+describe('without Snipaya', () => {
+  it('answers initialize and the lists from the catalog when Snipaya does not answer', async () => {
+    const url = new URL(`http://127.0.0.1:${await unusedPort()}/mcp`)
+    const { request, start } = await session({ connection: { url, token: TOKEN } })
+    const init = await start()
+    expect(init.result).toMatchObject({
+      protocolVersion: '2025-06-18',
+      serverInfo: { name: 'snipaya', version: '9.9.9' },
+      instructions: catalog.instructions
+    })
+    expect((await request('tools/list')).result).toEqual({ tools: catalog.tools })
+    expect((await request('prompts/list')).result).toEqual({ prompts: catalog.prompts })
+  })
+
+  it('answers tool calls with what to do when Snipaya does not answer', async () => {
+    const url = new URL(`http://127.0.0.1:${await unusedPort()}/mcp`)
+    const { request, start } = await session({ connection: { url, token: TOKEN } })
+    await start()
+    const reply = await request('tools/call', { name: 'snipaya_get_canvas', arguments: {} })
+    expect(reply.result?.isError).toBe(true)
+    expect(callText(reply)).toMatch(/^Cannot reach Snipaya at http:\/\/127\.0\.0\.1:\d+\/mcp\. Is Snipaya open\?/)
+    const prompt = await request('prompts/get', { name: 'explain_bug' })
+    expect(prompt.error?.message).toMatch(/^Cannot reach Snipaya/)
+  })
+
+  it('answers tool calls with the reason it was given when there is nothing to connect to', async () => {
+    const { request, start } = await session({ connection: 'Install Snipaya first.' })
+    await start()
+    const reply = await request('tools/call', { name: 'snipaya_render', arguments: {} })
+    expect(reply.result).toEqual({ content: [{ type: 'text', text: 'Install Snipaya first.' }], isError: true })
+  })
+
+  it('logs why it answers from the catalog', async () => {
+    const lines: string[] = []
+    const { start } = await session({ connection: 'Install Snipaya first.', log: (line) => lines.push(line) })
+    await start()
+    expect(lines.join('\n')).toMatch(/Listing Snipaya's tools from the built-in catalog until Snipaya answers\./)
+  })
+
+  it('keeps the latest reason while Snipaya stays away', async () => {
+    const reconnect = vi.fn(async () => 'Snipaya is still closed.')
+    const { request, start } = await session({ connection: 'Install Snipaya first.', reconnect })
+    await start()
+    const reply = await request('tools/call', { name: 'snipaya_render', arguments: {} })
+    expect(callText(reply)).toBe('Snipaya is still closed.')
+    expect(reconnect).toHaveBeenCalledTimes(1)
+  })
+
+  it('uses the error as the reason when checking for Snipaya fails', async () => {
+    const reconnect = vi.fn(async () => Promise.reject(new Error('Settings broke.')))
+    const { request, start } = await session({ connection: 'Install Snipaya first.', reconnect })
+    await start()
+    expect(callText(await request('tools/call', { name: 'snipaya_render', arguments: {} }))).toBe('Settings broke.')
+  })
+
+  it('does not look for Snipaya to answer the lists', async () => {
+    const reconnect = vi.fn(async () => 'closed')
+    const { request, start } = await session({ connection: 'Install Snipaya first.', reconnect })
+    await start()
+    await request('tools/list')
+    await request('prompts/list')
+    expect(reconnect).not.toHaveBeenCalled()
+  })
+})
+
+describe('when Snipaya starts answering later', () => {
+  it('forwards the call that found it and every message after it', async () => {
+    const reconnect = vi.fn(async () => ({ url: new URL(server.url), token: TOKEN }))
+    const { request, start, messages } = await session({ connection: 'Install Snipaya first.', reconnect })
+    await start()
+    const reply = await request('tools/call', { name: 'echo', arguments: { text: 'found you' } })
+    expect(reply.result).toEqual({ content: [{ type: 'text', text: 'found you' }] })
+    expect(((await request('tools/list')).result?.tools as { name: string }[]).map((tool) => tool.name)).toEqual([
+      'echo',
+      'log',
+      'roots',
+      'announce',
+      'boom'
+    ])
+    expect(reconnect).toHaveBeenCalledTimes(1)
+    expect(messages.map((message) => message.method).filter(Boolean)).toEqual([
+      'notifications/tools/list_changed',
+      'notifications/prompts/list_changed'
+    ])
+  })
+
+  it('passes the client capabilities on, so Snipaya can ask the client', async () => {
+    const reconnect = async () => ({ url: new URL(server.url), token: TOKEN })
+    const { request, start, messages } = await session({ connection: 'Install Snipaya first.', reconnect })
+    await start()
+    const call = request('tools/call', { name: 'roots' })
+    await until(() => messages.some((message) => message.method === 'roots/list'))
+    expect(server.authorizations.every((value) => value === `Bearer ${TOKEN}`)).toBe(true)
+    void call
+  })
+
+  it('stays on the catalog when Snipaya rejects the token', async () => {
+    const reconnect = async () => ({ url: new URL(server.url), token: 'b'.repeat(64) })
+    const { request, start } = await session({ connection: 'Install Snipaya first.', reconnect })
+    await start()
+    const reply = await request('tools/call', { name: 'snipaya_render', arguments: {} })
+    expect(reply.result?.isError).toBe(true)
+    expect(callText(reply)).toMatch(/Snipaya rejected the token/)
+    expect((await request('tools/list')).result).toEqual({ tools: catalog.tools })
   })
 })
 
 describe('license agreement', () => {
-  const initialize = {
-    jsonrpc: '2.0',
-    id: 1,
-    method: 'initialize',
-    params: {
-      protocolVersion: '2025-06-18',
-      capabilities: {},
-      clientInfo: { name: 'license-test', version: '1.0.0' }
-    }
-  }
-
-  const firstReply = async (url: string, licenseAccepted: () => Promise<boolean>) => {
-    const stdin = new PassThrough()
-    const stdout = new PassThrough()
-    const bridge = await startBridge({
-      url: new URL(url),
-      token: TOKEN,
-      stdin,
-      stdout,
-      log: () => undefined,
-      licenseAccepted
-    })
-    const reply = new Promise<{ result?: unknown; error?: { message: string } }>((resolve) => {
-      stdout.once('data', (chunk: Buffer) => resolve(JSON.parse(chunk.toString('utf8'))))
-    })
-    stdin.write(`${JSON.stringify(initialize)}\n`)
-    try {
-      return await reply
-    } finally {
-      await bridge.close()
-    }
-  }
-
   it('is never read while Snipaya answers', async () => {
     const licenseAccepted = vi.fn(async () => false)
-    expect(await firstReply(server.url, licenseAccepted)).toHaveProperty('result')
+    const { start } = await session({ connection: { url: new URL(server.url), token: TOKEN }, licenseAccepted })
+    expect((await start()).result).toMatchObject({ serverInfo: { name: 'fixture' } })
     expect(licenseAccepted).not.toHaveBeenCalled()
   })
 
   it('is read when Snipaya does not answer', async () => {
     const licenseAccepted = vi.fn(async () => false)
-    const reply = await firstReply(`http://127.0.0.1:${await unusedPort()}/mcp`, licenseAccepted)
-    expect(reply.error?.message).toMatch(/accept the license agreement/)
+    const url = new URL(`http://127.0.0.1:${await unusedPort()}/mcp`)
+    const { request, start } = await session({ connection: { url, token: TOKEN }, licenseAccepted })
+    await start()
+    const reply = await request('tools/call', { name: 'snipaya_render', arguments: {} })
+    expect(callText(reply)).toMatch(/accept the license agreement/)
     expect(licenseAccepted).toHaveBeenCalled()
   })
 })

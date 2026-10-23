@@ -180,10 +180,8 @@ npm ci
 npm run lint
 npm run typecheck
 npm test          # builds, then runs the bridge over stdio against a local test server
-npm run pack:mcpb # builds snipaya-mcp-<version>.mcpb with the official mcpb CLI, and snipaya-mcp-<version>-smithery.mcpb
+npm run pack:mcpb # builds snipaya-mcp-<version>.mcpb with the official mcpb CLI
 ```
-
-`npm run pack:mcpb` also writes `snipaya-mcp-<version>-smithery.mcpb` for Smithery. It is the same bundle with each tool's `inputSchema` in `manifest.json`, which Smithery requires and the MCPB manifest schema does not allow.
 
 ### Catalog
 
@@ -221,8 +219,6 @@ git push --follow-tags
 ```
 
 When the workflow reaches **Publish to npm**, approve the staged version with a 2FA prompt: `npm stage approve snipaya-mcp@<version>`, or on the package page on npmjs.com. The rest of the release continues on its own.
-
-The workflow attaches only the official bundle. For Smithery, run `npm run pack:mcpb` at the tag and upload `snipaya-mcp-<version>-smithery.mcpb` yourself.
 
 Re-running a failed release is safe: it skips the npm and MCP Registry publish when that version is already there, and replaces the bundle on an existing GitHub release.
 

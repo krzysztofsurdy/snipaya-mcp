@@ -182,39 +182,3 @@ describe('verify-version', () => {
     expect(result.stderr).toContain('Expected a tag like v1.2.3')
   })
 })
-
-describe('smitheryManifest', () => {
-  const transform = (manifest: unknown, catalog: unknown) => {
-    const code = `import { smitheryManifest } from ${JSON.stringify(script('metadata.mjs'))}
-process.stdout.write(JSON.stringify(smitheryManifest(${JSON.stringify(manifest)}, ${JSON.stringify(catalog)})))`
-    const result = spawnSync(process.execPath, ['--input-type=module', '-e', code], { encoding: 'utf8' })
-    expect(result.status, result.stderr).toBe(0)
-    return JSON.parse(result.stdout) as Record<string, unknown>
-  }
-
-  it('adds the input schema of every tool and keeps the rest of the manifest', () => {
-    const schema = { type: 'object', properties: { text: { type: 'string' } } }
-    const manifest = {
-      name: 'snipaya-mcp',
-      version: '1.2.0',
-      tools: [{ name: 'snipaya_add_text', description: 'Add text' }],
-      prompts: [{ name: 'p', text: 'Do it.' }]
-    }
-    const catalog = {
-      tools: [{ name: 'snipaya_add_text', title: 'Add text', description: 'Add text', inputSchema: schema }]
-    }
-
-    expect(transform(manifest, catalog)).toEqual({
-      ...manifest,
-      tools: [{ name: 'snipaya_add_text', description: 'Add text', inputSchema: schema }]
-    })
-  })
-
-  it('fails when a manifest tool is missing from the catalog', () => {
-    const code = `import { smitheryManifest } from ${JSON.stringify(script('metadata.mjs'))}
-smitheryManifest({ tools: [{ name: 'gone' }] }, { tools: [] })`
-    const result = spawnSync(process.execPath, ['--input-type=module', '-e', code], { encoding: 'utf8' })
-    expect(result.status).not.toBe(0)
-    expect(result.stderr).toContain('catalog.json has no tool gone')
-  })
-})
